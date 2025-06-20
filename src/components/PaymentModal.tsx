@@ -10,6 +10,7 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 interface PaymentModalProps {
   onClose: () => void;
   price: number;
+  onPaymentSuccess: () => void;
 }
 
 const CheckoutForm: React.FC<{ price: number; onSuccess: () => void }> = ({ price, onSuccess }) => {
@@ -145,15 +146,13 @@ const CheckoutForm: React.FC<{ price: number; onSuccess: () => void }> = ({ pric
   );
 };
 
-const PaymentModal: React.FC<PaymentModalProps> = ({ onClose, price }) => {
+const PaymentModal: React.FC<PaymentModalProps> = ({ onClose, price, onPaymentSuccess }) => {
   const [success, setSuccess] = useState(false);
 
   const handleSuccess = () => {
     setSuccess(true);
     setTimeout(() => {
-      onClose();
-      // Reload page to refresh results
-      window.location.reload();
+      onPaymentSuccess();
     }, 2000);
   };
 

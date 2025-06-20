@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, MapPin, Circle, Store, Star, ExternalLink, AlertCircle, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { Business, SearchResults } from '@/lib/business-checker';
 import PaymentModal from '@/components/PaymentModal';
@@ -16,6 +16,33 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [currentFilter, setCurrentFilter] = useState('all');
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [hasPaid, setHasPaid] = useState(false);
+
+  // Check for payment status on component mount
+  useEffect(() => {
+    const paymentStatus = localStorage.getItem('businessCheckerPaid');
+    if (paymentStatus === 'true') {
+      setHasPaid(true);
+    }
+  }, []);
+
+  const performSearch = async (searchData: typeof formData, userHasPaid = false) => {
+    const response = await fetch('/api/search', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ ...searchData, hasPaid: userHasPaid })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'An error occurred while searching');
+    }
+
+    return data;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,20 +56,7 @@ export default function Home() {
     setError(null);
 
     try {
-      const response = await fetch('/api/search', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'An error occurred while searching');
-      }
-
+      const data = await performSearch(formData, hasPaid);
       setResults(data);
     } catch (error) {
       console.error('Search error:', error);
@@ -101,6 +115,27 @@ export default function Home() {
   };
 
   const filteredBusinesses = results ? filterBusinesses(results.businesses, currentFilter) : [];
+
+  const handlePaymentSuccess = async () => {
+    // Store payment status in localStorage
+    localStorage.setItem('businessCheckerPaid', 'true');
+    setHasPaid(true);
+    
+    // Re-run the search with full access if we have search data
+    if (formData.query && formData.location) {
+      setLoading(true);
+      try {
+        const data = await performSearch(formData, true);
+        setResults(data);
+      } catch (error) {
+        console.error('Error refreshing search after payment:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    setShowPaymentModal(false);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-purple-800">
@@ -236,7 +271,7 @@ export default function Home() {
             </div>
 
             {/* Upgrade Notice */}
-            {results.payment_info.is_free_user && results.payment_info.remaining > 0 && (
+            {results.payment_info.is_free_user && results.payment_info.remaining > 0 && !hasPaid && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -356,6 +391,7 @@ export default function Home() {
         <PaymentModal
           onClose={() => setShowPaymentModal(false)}
           price={results?.payment_info.upgrade_price || 6}
+          onPaymentSuccess={handlePaymentSuccess}
         />
       )}
     </div>

@@ -3,7 +3,7 @@ import { BusinessChecker, SearchResults } from '@/lib/business-checker';
 
 export async function POST(request: NextRequest) {
   try {
-    const { query, location, radius } = await request.json();
+    const { query, location, radius, hasPaid } = await request.json();
 
     if (!query || !location) {
       return NextResponse.json(
@@ -23,12 +23,12 @@ export async function POST(request: NextRequest) {
     const checker = new BusinessChecker();
     const results = await checker.analyzeBusinesses(query, location, radius || 15000);
 
-    // Check if user has paid for full access (you can implement session management here)
-    const hasPaid = false; // TODO: Implement payment status check
+    // Check if user has paid for full access
+    const userHasPaid = hasPaid || false;
 
     // Limit results for free users
-    const limitedResults = hasPaid ? results : results.slice(0, 5);
-    const remainingCount = hasPaid ? 0 : Math.max(0, results.length - 5);
+    const limitedResults = userHasPaid ? results : results.slice(0, 5);
+    const remainingCount = userHasPaid ? 0 : Math.max(0, results.length - 5);
 
     // Prepare response with statistics
     const businessesWithWebsites = limitedResults.filter(b => b.website && b.website !== 'N/A').length;
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
         accessible_percentage: businessesWithWebsites > 0 ? Math.round((accessibleWebsites / businessesWithWebsites) * 100 * 10) / 10 : 0
       },
       payment_info: {
-        is_free_user: !hasPaid,
+        is_free_user: !userHasPaid,
         total_found: results.length,
         showing: limitedResults.length,
         remaining: remainingCount,
