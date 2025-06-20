@@ -14,7 +14,7 @@ export async function POST() {
   try {
     // Create a PaymentIntent with the order amount and currency
     const intent = await stripe.paymentIntents.create({
-      amount: 600, // $6.00 in cents
+      amount: 200, // $2.00 in cents
       currency: 'usd',
       description: 'Unlock all business search results',
       metadata: { feature: 'full_search_access' }

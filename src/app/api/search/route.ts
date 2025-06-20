@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
         total_found: results.length,
         showing: limitedResults.length,
         remaining: remainingCount,
-        upgrade_price: 6.00
+        upgrade_price: 2.00
       }
     };
 
