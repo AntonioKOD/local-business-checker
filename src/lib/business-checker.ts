@@ -105,7 +105,6 @@ export class BusinessChecker {
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
 
-      console.log(`Found ${allBusinesses.length} businesses in ${radius/1000}km radius`);
       return allBusinesses.slice(0, maxResults);
 
     } catch (error) {
@@ -137,13 +136,7 @@ export class BusinessChecker {
       const result = placeDetailsResponse.data.result;
       const website = result.website;
 
-      // Debug logging for website detection
-      const businessName = result.name || 'Unknown';
-      if (website) {
-        console.log(`✅ Website found for ${businessName}: ${website}`);
-      } else {
-        console.log(`❌ No website found for ${businessName}`);
-      }
+      // Website detection completed silently
 
       return {
         name: result.name || 'N/A',
@@ -263,7 +256,6 @@ export class BusinessChecker {
         })
       );
 
-      console.log(`✅ Analysis complete for ${detailedBusinesses.length} businesses`);
       return detailedBusinesses;
 
     } catch (error) {
