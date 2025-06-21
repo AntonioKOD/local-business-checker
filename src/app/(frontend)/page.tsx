@@ -79,7 +79,7 @@ export default function BusinessChecker() {
   const [lastSearchTime, setLastSearchTime] = useState(0);
   const SEARCH_DEBOUNCE_MS = 2000; // Minimum 2 seconds between searches
 
-  const checkAuthStatus = async () => {
+  const checkAuthStatus = useCallback(async () => {
     if (!authLoading) return; // Only check if we're currently in loading state
     
     try {
@@ -93,7 +93,7 @@ export default function BusinessChecker() {
     } finally {
       setAuthLoading(false);
     }
-  };
+  }, [authLoading]);
 
   const fetchAnalyticsData = useCallback(async () => {
     if (!currentUser || analyticsLoading) return; // Prevent multiple simultaneous calls
@@ -117,14 +117,14 @@ export default function BusinessChecker() {
   // Check authentication status on page load
   useEffect(() => {
     checkAuthStatus();
-  }, []);
+  }, [checkAuthStatus]);
 
   // Fetch analytics data when analytics tab is active
   useEffect(() => {
     if (activeTab === 'analytics' && currentUser && !analyticsData) {
       fetchAnalyticsData();
     }
-  }, [activeTab, currentUser, analyticsData]);
+  }, [activeTab, currentUser, analyticsData, fetchAnalyticsData]);
 
   // Show loading while checking authentication
   if (authLoading) {

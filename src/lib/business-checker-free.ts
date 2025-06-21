@@ -59,7 +59,7 @@ export class FreeBusinessChecker {
       // For radius support, we need to use ll (lat,lng) + radius
       // First, try to get coordinates using a simple geocoding approach
       let useRadius = false;
-      let lat: number, lng: number;
+      let lat: number | undefined, lng: number | undefined;
 
       // Try to geocode the location using a simple approach
       try {
@@ -73,9 +73,9 @@ export class FreeBusinessChecker {
             console.log(`Geocoded ${location} to ${lat},${lng}`);
           }
         }
-      } catch (geocodeError) {
-        console.log('Geocoding failed, using location name only');
-      }
+             } catch {
+         console.log('Geocoding failed, using location name only');
+       }
 
       const searchUrl = new URL('https://api.foursquare.com/v3/places/search');
       searchUrl.searchParams.set('query', query);
@@ -143,13 +143,29 @@ export class FreeBusinessChecker {
     }
 
   // Helper method to format Foursquare results
-  private formatFoursquareResults(searchData: any): Business[] {
+  private formatFoursquareResults(searchData: { results?: Array<{
+    name?: string;
+    fsq_id: string;
+    rating?: number;
+    location?: {
+      formatted_address?: string;
+      address?: string;
+      locality?: string;
+      region?: string;
+      postcode?: string;
+    };
+    categories?: Array<{ name: string }>;
+    price?: number;
+    website?: string;
+    tel?: string;
+    hours?: { display?: string };
+  }> }): Business[] {
     if (!searchData.results || searchData.results.length === 0) {
       console.log('No results found in Foursquare response');
       return [];
     }
 
-    return searchData.results.map((place: any): Business => ({
+    return searchData.results.map((place): Business => ({
       name: place.name || 'N/A',
       place_id: place.fsq_id,
       rating: place.rating || 'N/A',
@@ -159,7 +175,7 @@ export class FreeBusinessChecker {
         place.location?.region,
         place.location?.postcode
       ].filter(Boolean).join(', ') || 'N/A',
-      types: place.categories?.map((cat: any) => cat.name) || [],
+      types: place.categories?.map((cat) => cat.name) || [],
       price_level: place.price || 'N/A',
       website: place.website,
       phone: place.tel,
