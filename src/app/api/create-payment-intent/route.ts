@@ -40,7 +40,7 @@ export async function POST(request: Request) {
 
     // Create a simple payment intent for the first month
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: 2000, // $20.00 in cents
+      amount: 700, // $7.00 in cents
       currency: 'usd',
       customer: customer.id,
       setup_future_usage: 'off_session', // Save payment method for future use

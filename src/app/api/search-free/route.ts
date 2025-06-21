@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { BusinessChecker, SearchResults } from '@/lib/business-checker';
+import { FreeBusinessChecker, SearchResults } from '@/lib/business-checker-free';
 import { getPayload } from 'payload';
 import config from '@/payload.config';
 
@@ -30,11 +30,11 @@ setInterval(() => {
       searchCache.delete(key);
     }
   }
-}, 60 * 60 * 1000); // Run every hour
+}, 60 * 60 * 1000);
 
 export async function POST(request: NextRequest) {
   try {
-    const { query, location, radius, maxResults = 10, userId, filterNoWebsite = false } = await request.json();
+    const { query, location, radius, radiusKm, maxResults = 10, userId, filterNoWebsite = false } = await request.json();
 
     if (!query || !location) {
       return NextResponse.json(
@@ -43,10 +43,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
-    if (!apiKey || apiKey === 'your_google_maps_api_key_here') {
+    // Check if Foursquare API key is configured
+    if (!process.env.FOURSQUARE_API_KEY) {
       return NextResponse.json(
-        { error: 'Google Maps API key not configured. Please set GOOGLE_MAPS_API_KEY environment variable.' },
+        { error: 'Please configure FOURSQUARE_API_KEY in your environment variables.' },
         { status: 500 }
       );
     }
@@ -79,41 +79,38 @@ export async function POST(request: NextRequest) {
       const ipData = anonymousSearchCounts.get(userIP);
       
       if (ipData) {
-        // Check if request is too frequent
-        const timeSinceLastRequest = now - ipData.lastRequest;
-        if (timeSinceLastRequest < MIN_REQUEST_INTERVAL_MS) {
-          return NextResponse.json({
-            error: 'Rate limit exceeded',
-            message: 'Please wait a moment before making another search.',
-            retryAfter: Math.ceil((MIN_REQUEST_INTERVAL_MS - timeSinceLastRequest) / 1000)
-          }, { status: 429 });
-        }
-        
-        // Reset count if 24 hours have passed
-        const hoursElapsed = (now - ipData.lastReset) / (1000 * 60 * 60);
-        if (hoursElapsed >= SEARCH_LIMIT_RESET_HOURS) {
-          anonymousSearchCounts.set(userIP, { count: 0, lastReset: now, lastRequest: now });
+        // Check if we need to reset the counter
+        const hoursSinceReset = (now - ipData.lastReset) / (1000 * 60 * 60);
+        if (hoursSinceReset >= SEARCH_LIMIT_RESET_HOURS) {
+          anonymousSearchCounts.set(userIP, { count: 0, lastReset: now, lastRequest: 0 });
         } else if (ipData.count >= 2) {
           canSearchAnonymously = false;
         }
+        
+        // Check rate limiting
+        if (now - ipData.lastRequest < MIN_REQUEST_INTERVAL_MS) {
+          return NextResponse.json(
+            { error: `Please wait ${Math.ceil((MIN_REQUEST_INTERVAL_MS - (now - ipData.lastRequest)) / 1000)} seconds before searching again.` },
+            { status: 429 }
+          );
+        }
       } else {
-        anonymousSearchCounts.set(userIP, { count: 0, lastReset: now, lastRequest: now });
+        anonymousSearchCounts.set(userIP, { count: 0, lastReset: now, lastRequest: 0 });
       }
     }
 
     if (!isSubscribed && !canSearchAnonymously) {
       return NextResponse.json({
-        error: 'Search limit exceeded',
-        message: 'You have reached the limit of 2 free searches. Subscribe to get unlimited searches.',
+        error: 'Free search limit reached (2 searches per day). Please upgrade to continue searching.',
         requiresSubscription: true,
-        upgradePrice: 7.00
-      }, { status: 403 });
+        message: 'You have reached your daily search limit. Upgrade to Premium for unlimited searches and advanced features.'
+      }, { status: 402 });
     }
 
-    // Check cache first to avoid expensive API calls
-    const cacheKey = `${query.toLowerCase()}-${location.toLowerCase()}-${maxResults}`;
-    const now = Date.now();
+    // Create cache key
+    const cacheKey = `${query}_${location}_${radius}_${maxResults}_${filterNoWebsite}`;
     const cachedResult = searchCache.get(cacheKey);
+    const now = Date.now();
     
     if (cachedResult && (now - cachedResult.timestamp) < CACHE_DURATION_MS) {
       console.log('Returning cached results for:', cacheKey);
@@ -131,8 +128,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(cachedResult.results);
     }
 
-    const checker = new BusinessChecker();
-    let results = await checker.analyzeBusinesses(query, location, radius || 15000, maxResults);
+    const checker = new FreeBusinessChecker();
+    // Convert kilometers to meters for the API (default 15km if not provided)
+    const radiusInMeters = radiusKm ? radiusKm * 1000 : (radius || 15000);
+    let results = await checker.analyzeBusinesses(query, location, radiusInMeters, maxResults);
 
     // Apply premium filtering if user is subscribed and filterNoWebsite is enabled
     if (isSubscribed && filterNoWebsite) {
@@ -169,6 +168,7 @@ export async function POST(request: NextRequest) {
           websitesFound: results.filter(b => b.website && b.website !== 'N/A').length,
           accessibleWebsites: results.filter(b => b.website_status?.accessible).length,
           searchDate: new Date(),
+          searchMethod: 'free_apis', // Track that this used free APIs
         },
       });
       console.log('Search logged successfully');

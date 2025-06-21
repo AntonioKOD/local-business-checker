@@ -272,7 +272,7 @@ const CheckoutForm: React.FC<{ onSuccess: (user: { id: string; email: string; fi
         </ul>
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border-2 border-blue-200 shadow-lg">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">$20.00</span>
+                            <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">$7.00</span>
             <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">per month</span>
           </div>
           <div className="flex items-center space-x-2">

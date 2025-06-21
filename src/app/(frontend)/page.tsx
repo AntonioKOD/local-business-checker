@@ -61,6 +61,7 @@ export default function BusinessChecker() {
   // Premium search settings (only for logged-in users)
   const [maxResults, setMaxResults] = useState(10);
   const [filterNoWebsite, setFilterNoWebsite] = useState(false);
+  const [radiusMiles, setRadiusMiles] = useState(10); // Default 10 miles
   
   // Analytics data
   const [analyticsData, setAnalyticsData] = useState<{
@@ -160,7 +161,7 @@ export default function BusinessChecker() {
     setLastSearchTime(now);
 
     try {
-      const response = await fetch('/api/search', {
+      const response = await fetch('/api/search-free', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -171,6 +172,7 @@ export default function BusinessChecker() {
           userId: currentUser?.id || null,
           maxResults: currentUser ? maxResults : 10,
           filterNoWebsite: currentUser ? filterNoWebsite : false,
+          radiusKm: radiusMiles * 1.60934, // Convert miles to kilometers
         }),
       });
 
@@ -258,7 +260,7 @@ export default function BusinessChecker() {
             "operatingSystem": "Web",
             "offers": {
               "@type": "Offer",
-              "price": "20.00",
+              "price": "7.00",
               "priceCurrency": "USD",
               "priceSpecification": {
                 "@type": "RecurringPaymentFrequency",
@@ -481,7 +483,7 @@ export default function BusinessChecker() {
                       <h3 className="text-lg font-bold text-gray-900">Premium Search Options</h3>
                     </div>
                     
-                    <div className="grid md:grid-cols-2 gap-6">
+                    <div className="grid md:grid-cols-3 gap-6">
                       <div className="group">
                         <label htmlFor="maxResults" className="block text-sm font-semibold text-gray-700 mb-2">
                           Number of businesses to fetch
@@ -497,6 +499,24 @@ export default function BusinessChecker() {
                           <option value={30}>30 businesses</option>
                           <option value={50}>50 businesses</option>
                           <option value={100}>100 businesses</option>
+                        </select>
+                      </div>
+                      
+                      <div className="group">
+                        <label htmlFor="radiusMiles" className="block text-sm font-semibold text-gray-700 mb-2">
+                          Search Radius
+                        </label>
+                        <select
+                          id="radiusMiles"
+                          value={radiusMiles}
+                          onChange={(e) => setRadiusMiles(parseInt(e.target.value))}
+                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-black bg-white"
+                        >
+                          <option value={1}>1 mile</option>
+                          <option value={5}>5 miles</option>
+                          <option value={10}>10 miles</option>
+                          <option value={25}>25 miles</option>
+                          <option value={50}>50 miles</option>
                         </select>
                       </div>
                       
@@ -590,7 +610,7 @@ export default function BusinessChecker() {
                           onClick={() => setShowPaymentModal(true)}
                           className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-3 rounded-full font-bold shadow-lg transform hover:scale-105 transition-all duration-200"
                         >
-                          Unlock All Results - $20/month
+                          Unlock All Results - $7/month
                         </button>
                       </div>
                     </div>
