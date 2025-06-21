@@ -236,7 +236,46 @@ export default function BusinessChecker() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <>
+      {/* Structured Data for SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebApplication",
+            "name": "BusinessChecker",
+            "url": "https://buildquick.io",
+            "description": "Discover local businesses and get comprehensive website analysis. Find businesses without websites, check website accessibility, and get detailed analytics.",
+            "applicationCategory": "BusinessApplication",
+            "operatingSystem": "Web",
+            "offers": {
+              "@type": "Offer",
+              "price": "20.00",
+              "priceCurrency": "USD",
+              "priceSpecification": {
+                "@type": "RecurringPaymentFrequency",
+                "frequency": "monthly"
+              }
+            },
+            "featureList": [
+              "Local business search",
+              "Website analysis",
+              "Accessibility checking",
+              "Lead generation",
+              "Business analytics",
+              "Competitor analysis"
+            ],
+            "provider": {
+              "@type": "Organization",
+              "name": "BusinessChecker",
+              "url": "https://buildquick.io"
+            }
+          })
+        }}
+      />
+
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-md shadow-sm border-b border-white/20 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -714,6 +753,7 @@ export default function BusinessChecker() {
           onAuthSuccess={handleAuthSuccess}
         />
       )}
-    </div>
+      </div>
+    </>
   );
 }
