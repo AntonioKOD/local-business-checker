@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
         const hoursElapsed = (now - ipData.lastReset) / (1000 * 60 * 60);
         if (hoursElapsed >= SEARCH_LIMIT_RESET_HOURS) {
           anonymousSearchCounts.set(userIP, { count: 0, lastReset: now, lastRequest: now });
-        } else if (ipData.count >= 5) {
+        } else if (ipData.count >= 2) {
           canSearchAnonymously = false;
         }
       } else {
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     if (!isSubscribed && !canSearchAnonymously) {
       return NextResponse.json({
         error: 'Search limit exceeded',
-        message: 'You have reached the limit of 5 free searches. Subscribe to get unlimited searches.',
+        message: 'You have reached the limit of 2 free searches. Subscribe to get unlimited searches.',
         requiresSubscription: true,
         upgradePrice: 20.00
       }, { status: 403 });
@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
         showing: limitedResults.length,
         remaining: remainingCount,
         upgrade_price: 20.00,
-        searches_remaining: isSubscribed ? null : Math.max(0, 5 - (anonymousSearchCounts.get(userIP)?.count || 0))
+        searches_remaining: isSubscribed ? null : Math.max(0, 2 - (anonymousSearchCounts.get(userIP)?.count || 0))
       }
     };
 

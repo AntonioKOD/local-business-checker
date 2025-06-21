@@ -52,10 +52,20 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Token verification error:', error);
-    return NextResponse.json(
-      { error: 'Invalid token' },
-      { status: 401 }
-    );
+    // Only log unexpected errors, not invalid/expired tokens which are normal
+    if (error instanceof jwt.JsonWebTokenError) {
+      // Token is invalid/expired - this is normal, don't log as error
+      return NextResponse.json(
+        { error: 'Invalid token' },
+        { status: 401 }
+      );
+    } else {
+      // Actual unexpected error - log this
+      console.error('Token verification error:', error);
+      return NextResponse.json(
+        { error: 'Token verification failed' },
+        { status: 500 }
+      );
+    }
   }
 } 

@@ -425,7 +425,7 @@ export default function BusinessChecker() {
                       </div>
                     </div>
                     <p className="text-gray-800 text-lg">
-                      Get <span className="font-bold text-blue-600">5 free searches</span> to explore our platform. 
+                      Get <span className="font-bold text-blue-600">2 free searches</span> to explore our platform. 
                       Upgrade for unlimited searches and premium analytics!
                     </p>
                   </div>
