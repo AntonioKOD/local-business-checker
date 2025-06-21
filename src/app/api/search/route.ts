@@ -8,14 +8,26 @@ const anonymousSearchCounts = new Map<string, { count: number; lastReset: number
 const SEARCH_LIMIT_RESET_HOURS = 24;
 const MIN_REQUEST_INTERVAL_MS = 2000; // Minimum 2 seconds between requests
 
+// Simple cache to prevent duplicate expensive API calls
+const searchCache = new Map<string, { results: SearchResults; timestamp: number }>();
+const CACHE_DURATION_MS = 10 * 60 * 1000; // 10 minutes cache
+
 // Cleanup old entries every hour to prevent memory leaks
 setInterval(() => {
   const now = Date.now();
   const cutoff = now - (SEARCH_LIMIT_RESET_HOURS * 60 * 60 * 1000);
   
+  // Cleanup anonymous search tracking
   for (const [ip, data] of anonymousSearchCounts.entries()) {
     if (data.lastReset < cutoff) {
       anonymousSearchCounts.delete(ip);
+    }
+  }
+  
+  // Cleanup search cache
+  for (const [key, data] of searchCache.entries()) {
+    if ((now - data.timestamp) > CACHE_DURATION_MS) {
+      searchCache.delete(key);
     }
   }
 }, 60 * 60 * 1000); // Run every hour
@@ -98,6 +110,27 @@ export async function POST(request: NextRequest) {
       }, { status: 403 });
     }
 
+    // Check cache first to avoid expensive API calls
+    const cacheKey = `${query.toLowerCase()}-${location.toLowerCase()}-${maxResults}`;
+    const now = Date.now();
+    const cachedResult = searchCache.get(cacheKey);
+    
+    if (cachedResult && (now - cachedResult.timestamp) < CACHE_DURATION_MS) {
+      console.log('Returning cached results for:', cacheKey);
+      
+      // Still update search count for anonymous users
+      if (!isSubscribed) {
+        const ipData = anonymousSearchCounts.get(userIP)!;
+        anonymousSearchCounts.set(userIP, { 
+          ...ipData, 
+          count: ipData.count + 1,
+          lastRequest: Date.now()
+        });
+      }
+      
+      return NextResponse.json(cachedResult.results);
+    }
+
     const checker = new BusinessChecker();
     let results = await checker.analyzeBusinesses(query, location, radius || 15000, maxResults);
 
@@ -166,6 +199,9 @@ export async function POST(request: NextRequest) {
         searches_remaining: isSubscribed ? null : Math.max(0, 2 - (anonymousSearchCounts.get(userIP)?.count || 0))
       }
     };
+
+    // Cache the results to avoid duplicate API calls
+    searchCache.set(cacheKey, { results: response, timestamp: now });
 
     return NextResponse.json(response);
 

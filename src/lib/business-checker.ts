@@ -58,7 +58,7 @@ export class BusinessChecker {
     this.client = new Client({});
   }
 
-  async searchBusinesses(query: string, location: string, radius: number = 15000, maxResults: number = 300): Promise<Business[]> {
+  async searchBusinesses(query: string, location: string, radius: number = 15000, maxResults: number = 10): Promise<Business[]> {
     try {
       // First, geocode the location to get coordinates
       const geocodeResponse = await this.client.geocode({
@@ -503,7 +503,7 @@ export class BusinessChecker {
     return statusMessages[statusCode] || 'Unknown Error';
   }
 
-  async analyzeBusinesses(query: string, location: string, radius: number = 15000, maxResults: number = 300): Promise<Business[]> {
+  async analyzeBusinesses(query: string, location: string, radius: number = 15000, maxResults: number = 10): Promise<Business[]> {
     try {
       // Get list of businesses
       const businesses = await this.searchBusinesses(query, location, radius, maxResults);
