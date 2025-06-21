@@ -198,7 +198,24 @@ export default buildConfig({
     },
   ],
   db: mongooseAdapter({
-    url: process.env.MONGODB_URL || 'mongodb://localhost:27017/business-checker',
+    url: process.env.DATABASE_URI || (() => {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error(
+          '🚨 MONGODB_URL environment variable is required in production. ' +
+          'Please set MONGODB_URL to your production MongoDB connection string. ' +
+          'See MONGODB-SETUP.md for detailed instructions.'
+        );
+      }
+      return 'mongodb://localhost:27017/business-checker';
+    })(),
+    connectOptions: {
+      retryWrites: true,
+      w: 'majority',
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+      family: 4, // Use IPv4, skip trying IPv6
+    },
   }),
   typescript: {
     outputFile: 'payload-types.ts',
