@@ -47,6 +47,7 @@ export interface SearchResults {
     showing: number;
     remaining: number;
     upgrade_price: number;
+    searches_remaining?: number | null;
   };
 }
 

@@ -1,23 +1,37 @@
-# Local Business Website Checker - NextJS
+# BusinessChecker - Complete SaaS Solution
 
-A modern NextJS application that helps you find local businesses using Google Places API and check if they have accessible websites. Perfect for digital marketing agencies, business consultants, or anyone looking to analyze the web presence of local businesses.
+A comprehensive SaaS application that helps businesses and agencies find local businesses, analyze their web presence, and identify opportunities. Built with modern authentication, subscription management, and analytics.
 
 ## Features
 
-- 🔍 **Smart Business Search**: Search for businesses by type and location using Google Places API
-- 🌐 **Website Analysis**: Automatically check if businesses have websites and if they're accessible
-- 📊 **Detailed Statistics**: Get insights about website coverage in your searched area
-- 💳 **Freemium Model**: Free access to first 5 results, upgrade for full access
-- 🎨 **Modern UI**: Beautiful, responsive design with Tailwind CSS
-- ⚡ **Fast Performance**: Built with NextJS 14 and TypeScript
+### 🔍 **Core Features**
+- **Smart Business Search**: Search for businesses by type and location using Google Places API
+- **Website Analysis**: Automatically check if businesses have websites and if they're accessible
+- **User Authentication**: Secure MongoDB-based user management with JWT
+- **Subscription Management**: Stripe-powered $10/month premium subscriptions
+
+### 📊 **Premium Features** 
+- **Analytics Dashboard**: Comprehensive insights and charts for premium users
+- **Competitor Analysis**: Market analysis and competitive intelligence
+- **Unlimited Searches**: No limits for premium subscribers
+- **Advanced Reporting**: Export data and schedule reports
+- **Lead Scoring**: Prioritize opportunities based on business analysis
+
+### 🛠 **Admin Features**
+- **PayloadCMS Admin Panel**: Manage users, subscriptions, and analytics
+- **MongoDB Database**: Scalable data storage
+- **Subscription Tracking**: Monitor user activity and revenue
 
 ## Tech Stack
 
-- **Frontend**: Next.js 14, React, TypeScript
-- **Styling**: Tailwind CSS
-- **Icons**: Lucide React
-- **Payments**: Stripe
+- **Frontend**: Next.js 15, React 19, TypeScript
+- **Styling**: Tailwind CSS v4
+- **Authentication**: JWT + HTTP-only cookies
+- **Database**: MongoDB with Mongoose
+- **CMS**: PayloadCMS for admin management
+- **Payments**: Stripe subscriptions
 - **APIs**: Google Maps/Places API
+- **Icons**: Lucide React
 - **Deployment**: Vercel-ready
 
 ## Quick Start
@@ -25,6 +39,7 @@ A modern NextJS application that helps you find local businesses using Google Pl
 ### Prerequisites
 
 - Node.js 18+ 
+- MongoDB database (local or cloud)
 - Google Maps API key
 - Stripe account (for payments)
 
@@ -33,36 +48,63 @@ A modern NextJS application that helps you find local businesses using Google Pl
 1. **Clone the repository**
    ```bash
    git clone <your-repo-url>
-   cd nextjs-business-checker
+   cd business-checker
    ```
 
 2. **Install dependencies**
    ```bash
-   npm install
+   npm install --legacy-peer-deps
    ```
 
 3. **Set up environment variables**
    
-   Copy `.env.local` and fill in your API keys:
-   ```bash
-   cp .env.local.example .env.local
-   ```
-
-   Required environment variables:
-   ```
+   Create `.env.local` with the following variables:
+   ```env
+   # Google Maps API
    GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
-   NEXTAUTH_SECRET=your-nextauth-secret-here
-   NEXTAUTH_URL=http://localhost:3000
+
+   # MongoDB Database
+   MONGODB_URL=mongodb://localhost:27017/business-checker
+
+   # JWT Secret for Authentication
+   JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+
+   # Stripe Payment Processing
    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key_here
    STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key_here
+
+   # PayloadCMS Configuration
+   PAYLOAD_SECRET=your-payload-secret-key-change-this-in-production
+
+   # Next.js Configuration
+   NEXTAUTH_URL=http://localhost:3000
+   NEXTAUTH_SECRET=your-nextauth-secret-here
+
+   # App Configuration
+   NODE_ENV=development
    ```
 
-4. **Run the development server**
+4. **Initialize PayloadCMS and Database**
+   ```bash
+   npm run payload:init
+   ```
+
+5. **Run the development server**
    ```bash
    npm run dev
    ```
 
    Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+6. **Access Admin Panel**
+   ```bash
+   # Run PayloadCMS admin (optional)
+   npm run payload:dev
+   ```
+
+   Admin panel: [http://localhost:3001/admin](http://localhost:3001/admin)
+   - Email: admin@businesschecker.com
+   - Password: admin123
 
 ## API Setup
 
