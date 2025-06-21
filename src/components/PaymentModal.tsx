@@ -83,8 +83,8 @@ const CheckoutForm: React.FC<{ onSuccess: (user: { id: string; email: string; fi
         
         // Poll for user creation (since webhook might take a moment)
         let attempts = 0;
-        const maxAttempts = 10;
-        const pollInterval = 1000; // 1 second
+        const maxAttempts = 6; // Reduced from 10
+        const pollInterval = 2000; // Increased from 1000ms to 2000ms (2 seconds)
         
         const pollForUser = async (): Promise<void> => {
           attempts++;
@@ -97,68 +97,68 @@ const CheckoutForm: React.FC<{ onSuccess: (user: { id: string; email: string; fi
               body: JSON.stringify({ email, customer_id }),
             });
             
-                         if (response.ok) {
-               const userData = await response.json();
-               if (userData.user) {
-                 // Try to set up subscription (optional)
-                 try {
-                   await fetch('/api/setup-subscription', {
-                     method: 'POST',
-                     headers: { 'Content-Type': 'application/json' },
-                     body: JSON.stringify({ 
-                       userId: userData.user.id, 
-                       customerId: customer_id 
-                     }),
-                   });
-                 } catch (subscriptionError) {
-                   console.log('Subscription setup will be handled later:', subscriptionError);
-                 }
-                                   
-                 setMessage('Account created successfully! Welcome to BusinessChecker Premium! You can now access all premium features.');
-                 onSuccess(userData.user);
-                 return;
-               }
-             }
+            if (response.ok) {
+              const userData = await response.json();
+              if (userData.user) {
+                // Try to set up subscription (optional)
+                try {
+                  await fetch('/api/setup-subscription', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                      userId: userData.user.id, 
+                      customerId: customer_id 
+                    }),
+                  });
+                } catch (subscriptionError) {
+                  console.log('Subscription setup will be handled later:', subscriptionError);
+                }
+                
+                setMessage('Account created successfully! Welcome to BusinessChecker Premium! You can now access all premium features.');
+                onSuccess(userData.user);
+                return;
+              }
+            }
             
             if (attempts < maxAttempts) {
               setTimeout(pollForUser, pollInterval);
             } else {
               // Fallback: create user directly if webhook failed
-                             const createResponse = await fetch('/api/auth/create-user-after-payment', {
-                 method: 'POST',
-                 headers: { 'Content-Type': 'application/json' },
-                 body: JSON.stringify({ 
-                   email, 
-                   firstName, 
-                   lastName, 
-                   password,
-                   customer_id,
-                   payment_intent_id: paymentIntent.id
-                 }),
-               });
+              const createResponse = await fetch('/api/auth/create-user-after-payment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                  email, 
+                  firstName, 
+                  lastName, 
+                  password,
+                  customer_id,
+                  payment_intent_id: paymentIntent.id
+                }),
+              });
               
-                             if (createResponse.ok) {
-                 const createdUser = await createResponse.json();
-                 
-                 // Try to set up subscription (optional, won't fail if payment method isn't ready)
-                 try {
-                   await fetch('/api/setup-subscription', {
-                     method: 'POST',
-                     headers: { 'Content-Type': 'application/json' },
-                     body: JSON.stringify({ 
-                       userId: createdUser.user.id, 
-                       customerId: customer_id 
-                     }),
-                   });
-                 } catch (subscriptionError) {
-                   console.log('Subscription setup will be handled later:', subscriptionError);
-                 }
-                 
-                 setMessage('Account created successfully! Welcome to BusinessChecker Premium! You can now access all premium features.');
-                 onSuccess(createdUser.user);
-               } else {
-                 throw new Error('Failed to create user account');
-               }
+              if (createResponse.ok) {
+                const createdUser = await createResponse.json();
+                
+                // Try to set up subscription (optional, won't fail if payment method isn't ready)
+                try {
+                  await fetch('/api/setup-subscription', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                      userId: createdUser.user.id, 
+                      customerId: customer_id 
+                    }),
+                  });
+                } catch (subscriptionError) {
+                  console.log('Subscription setup will be handled later:', subscriptionError);
+                }
+                
+                setMessage('Account created successfully! Welcome to BusinessChecker Premium! You can now access all premium features.');
+                onSuccess(createdUser.user);
+              } else {
+                throw new Error('Failed to create user account');
+              }
             }
           } catch (error) {
             console.error('Error polling for user:', error);

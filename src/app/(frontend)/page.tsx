@@ -75,8 +75,12 @@ export default function BusinessChecker() {
     websiteHealth: { accessible: number; inaccessible: number; noWebsite: number; };
   } | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [lastSearchTime, setLastSearchTime] = useState(0);
+  const SEARCH_DEBOUNCE_MS = 2000; // Minimum 2 seconds between searches
 
   const checkAuthStatus = async () => {
+    if (!authLoading) return; // Only check if we're currently in loading state
+    
     try {
       const response = await fetch('/api/auth/verify-token');
       if (response.ok) {
@@ -91,7 +95,7 @@ export default function BusinessChecker() {
   };
 
   const fetchAnalyticsData = useCallback(async () => {
-    if (!currentUser) return;
+    if (!currentUser || analyticsLoading) return; // Prevent multiple simultaneous calls
     
     setAnalyticsLoading(true);
     try {
@@ -107,7 +111,7 @@ export default function BusinessChecker() {
     } finally {
       setAnalyticsLoading(false);
     }
-  }, [currentUser]);
+  }, [currentUser, analyticsLoading]); // Added analyticsLoading to prevent concurrent calls
 
   // Check authentication status on page load
   useEffect(() => {
@@ -119,7 +123,7 @@ export default function BusinessChecker() {
     if (activeTab === 'analytics' && currentUser && !analyticsData) {
       fetchAnalyticsData();
     }
-  }, [activeTab, currentUser, analyticsData, fetchAnalyticsData]);
+  }, [activeTab, currentUser, analyticsData]);
 
   // Show loading while checking authentication
   if (authLoading) {
@@ -144,8 +148,16 @@ export default function BusinessChecker() {
     e.preventDefault();
     if (!query.trim() || !location.trim()) return;
 
+    // Debounce search requests to prevent spam
+    const now = Date.now();
+    if (now - lastSearchTime < SEARCH_DEBOUNCE_MS) {
+      setError(`Please wait ${Math.ceil((SEARCH_DEBOUNCE_MS - (now - lastSearchTime)) / 1000)} seconds before searching again.`);
+      return;
+    }
+
     setLoading(true);
     setError(null);
+    setLastSearchTime(now);
 
     try {
       const response = await fetch('/api/search', {
@@ -174,11 +186,6 @@ export default function BusinessChecker() {
 
       const data = await response.json();
       setResults(data);
-      
-      // Refresh analytics data if user is logged in and analytics tab was previously viewed
-      if (currentUser && analyticsData) {
-        fetchAnalyticsData();
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {

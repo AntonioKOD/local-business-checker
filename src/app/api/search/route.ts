@@ -4,8 +4,21 @@ import { getPayload } from 'payload';
 import config from '@/payload.config';
 
 // Track anonymous user searches by IP
-const anonymousSearchCounts = new Map<string, { count: number; lastReset: number }>();
+const anonymousSearchCounts = new Map<string, { count: number; lastReset: number; lastRequest: number }>();
 const SEARCH_LIMIT_RESET_HOURS = 24;
+const MIN_REQUEST_INTERVAL_MS = 2000; // Minimum 2 seconds between requests
+
+// Cleanup old entries every hour to prevent memory leaks
+setInterval(() => {
+  const now = Date.now();
+  const cutoff = now - (SEARCH_LIMIT_RESET_HOURS * 60 * 60 * 1000);
+  
+  for (const [ip, data] of anonymousSearchCounts.entries()) {
+    if (data.lastReset < cutoff) {
+      anonymousSearchCounts.delete(ip);
+    }
+  }
+}, 60 * 60 * 1000); // Run every hour
 
 export async function POST(request: NextRequest) {
   try {
@@ -54,15 +67,25 @@ export async function POST(request: NextRequest) {
       const ipData = anonymousSearchCounts.get(userIP);
       
       if (ipData) {
+        // Check if request is too frequent
+        const timeSinceLastRequest = now - ipData.lastRequest;
+        if (timeSinceLastRequest < MIN_REQUEST_INTERVAL_MS) {
+          return NextResponse.json({
+            error: 'Rate limit exceeded',
+            message: 'Please wait a moment before making another search.',
+            retryAfter: Math.ceil((MIN_REQUEST_INTERVAL_MS - timeSinceLastRequest) / 1000)
+          }, { status: 429 });
+        }
+        
         // Reset count if 24 hours have passed
         const hoursElapsed = (now - ipData.lastReset) / (1000 * 60 * 60);
         if (hoursElapsed >= SEARCH_LIMIT_RESET_HOURS) {
-          anonymousSearchCounts.set(userIP, { count: 0, lastReset: now });
+          anonymousSearchCounts.set(userIP, { count: 0, lastReset: now, lastRequest: now });
         } else if (ipData.count >= 5) {
           canSearchAnonymously = false;
         }
       } else {
-        anonymousSearchCounts.set(userIP, { count: 0, lastReset: now });
+        anonymousSearchCounts.set(userIP, { count: 0, lastReset: now, lastRequest: now });
       }
     }
 
@@ -92,7 +115,8 @@ export async function POST(request: NextRequest) {
       const ipData = anonymousSearchCounts.get(userIP)!;
       anonymousSearchCounts.set(userIP, { 
         ...ipData, 
-        count: ipData.count + 1 
+        count: ipData.count + 1,
+        lastRequest: Date.now()
       });
     }
 

@@ -1,6 +1,7 @@
 import React from 'react'
 import './globals.css'
 import type { Metadata } from 'next'
+import {GoogleAnalytics} from '@next/third-parties/google'
 
 export const metadata: Metadata = {
   title: {
@@ -81,7 +82,9 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
       <body>
-        <main>{children}</main>
+        <main>{children}
+          <GoogleAnalytics gaId="G-E2T6B7DTY4" />
+        </main>
       </body>
     </html>
   )
