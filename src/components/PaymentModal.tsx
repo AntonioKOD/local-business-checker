@@ -28,17 +28,36 @@ const CheckoutForm: React.FC<{ onSuccess: (user: { id: string; email: string; fi
     event.preventDefault();
 
     if (!stripe || !elements) {
-      return;
-    }
-
-    if (!email || !firstName || !lastName || !password) {
-      setMessage('Please fill in all required fields.');
+      setMessage('Payment system is not ready. Please try again in a moment.');
       setMessageType('error');
       return;
     }
 
-    if (password.length < 8) {
-      setMessage('Password must be at least 8 characters long.');
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setMessage('Please enter a valid email address.');
+      setMessageType('error');
+      return;
+    }
+
+    // Validate name fields
+    if (firstName.trim().length < 2) {
+      setMessage('First name must be at least 2 characters long.');
+      setMessageType('error');
+      return;
+    }
+
+    if (lastName.trim().length < 2) {
+      setMessage('Last name must be at least 2 characters long.');
+      setMessageType('error');
+      return;
+    }
+
+    // Validate password strength
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordRegex.test(password)) {
+      setMessage('Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.');
       setMessageType('error');
       return;
     }
@@ -51,7 +70,12 @@ const CheckoutForm: React.FC<{ onSuccess: (user: { id: string; email: string; fi
       const response = await fetch('/api/create-payment-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, firstName, lastName, password }),
+        body: JSON.stringify({ 
+          email: email.toLowerCase().trim(), 
+          firstName: firstName.trim(), 
+          lastName: lastName.trim(), 
+          password 
+        }),
       });
 
       if (!response.ok) {
@@ -63,108 +87,140 @@ const CheckoutForm: React.FC<{ onSuccess: (user: { id: string; email: string; fi
       const { client_secret, customer_id } = data;
 
       if (!client_secret) {
-        console.error('No client_secret received:', data);
         throw new Error('Payment processing failed - no client secret received');
       }
 
-      // Confirm payment
-      const { error, paymentIntent } = await stripe.confirmCardPayment(client_secret, {
+      // Get card element
+      const cardElement = elements.getElement(CardElement);
+      if (!cardElement) {
+        throw new Error('Card element not found');
+      }
+
+      // Confirm payment with error handling
+      const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(client_secret, {
         payment_method: {
-          card: elements.getElement(CardElement)!,
+          card: cardElement,
+          billing_details: {
+            name: `${firstName.trim()} ${lastName.trim()}`,
+            email: email.toLowerCase().trim()
+          }
         }
       });
 
-      if (error) {
-        setMessage(error.message || 'An error occurred while processing your payment.');
-        setMessageType('error');
-      } else if (paymentIntent.status === 'succeeded') {
+      if (stripeError) {
+        throw new Error(stripeError.message || 'Payment failed');
+      }
+
+      if (paymentIntent.status === 'succeeded') {
         setMessage('Payment successful! Creating your account...');
         setMessageType('success');
         
-        // Poll for user creation (since webhook might take a moment)
+        // Poll for user creation with improved error handling
         let attempts = 0;
-        const maxAttempts = 6; // Reduced from 10
-        const pollInterval = 2000; // Increased from 1000ms to 2000ms (2 seconds)
+        const maxAttempts = 6;
+        const pollInterval = 2000;
         
         const pollForUser = async (): Promise<void> => {
           attempts++;
           
           try {
-            // Try to find the user by email in PayloadCMS
             const response = await fetch('/api/auth/check-user', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ email, customer_id }),
             });
             
-            if (response.ok) {
-              const userData = await response.json();
-              if (userData.user) {
-                // Try to set up subscription (optional)
-                try {
-                  await fetch('/api/setup-subscription', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                      userId: userData.user.id, 
-                      customerId: customer_id 
-                    }),
-                  });
-                } catch (subscriptionError) {
-                  console.log('Subscription setup will be handled later:', subscriptionError);
+            if (!response.ok) {
+              throw new Error('Failed to check user status');
+            }
+
+            const userData = await response.json();
+            if (userData.user) {
+              // Try to set up subscription
+              try {
+                const subscriptionResponse = await fetch('/api/setup-subscription', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ 
+                    userId: userData.user.id, 
+                    customerId: customer_id 
+                  }),
+                });
+
+                if (!subscriptionResponse.ok) {
+                  console.warn('Subscription setup will be handled later');
                 }
-                
-                setMessage('Account created successfully! Welcome to BusinessChecker Premium! You can now access all premium features.');
-                onSuccess(userData.user);
-                return;
+              } catch (subscriptionError) {
+                console.warn('Subscription setup will be handled later:', subscriptionError);
               }
+              
+              setMessage('Account created successfully! Welcome to BusinessChecker Premium! You can now access all premium features.');
+              onSuccess(userData.user);
+              return;
             }
             
             if (attempts < maxAttempts) {
               setTimeout(pollForUser, pollInterval);
             } else {
-              // Fallback: create user directly if webhook failed
+              // Final attempt: create user directly
               const createResponse = await fetch('/api/auth/create-user-after-payment', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                  email, 
-                  firstName, 
-                  lastName, 
+                  email: email.toLowerCase().trim(), 
+                  firstName: firstName.trim(), 
+                  lastName: lastName.trim(), 
                   password,
                   customer_id,
                   payment_intent_id: paymentIntent.id
                 }),
               });
               
-              if (createResponse.ok) {
-                const createdUser = await createResponse.json();
-                
-                // Try to set up subscription (optional, won't fail if payment method isn't ready)
-                try {
-                  await fetch('/api/setup-subscription', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                      userId: createdUser.user.id, 
-                      customerId: customer_id 
-                    }),
-                  });
-                } catch (subscriptionError) {
-                  console.log('Subscription setup will be handled later:', subscriptionError);
-                }
-                
-                setMessage('Account created successfully! Welcome to BusinessChecker Premium! You can now access all premium features.');
-                onSuccess(createdUser.user);
-              } else {
+              if (!createResponse.ok) {
                 throw new Error('Failed to create user account');
               }
+
+              const createdUser = await createResponse.json();
+              
+              // Try to set up subscription
+              try {
+                await fetch('/api/setup-subscription', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ 
+                    userId: createdUser.user.id, 
+                    customerId: customer_id 
+                  }),
+                });
+              } catch (subscriptionError) {
+                console.warn('Subscription setup will be handled later:', subscriptionError);
+              }
+              
+              setMessage('Account created successfully! Welcome to BusinessChecker Premium! You can now access all premium features.');
+              onSuccess(createdUser.user);
             }
           } catch (error) {
-            console.error('Error polling for user:', error);
+            console.error('Error during user creation:', error);
             if (attempts >= maxAttempts) {
-              setMessage('Payment successful, but there was an issue creating your account. Please contact support.');
+              setMessage('Your payment was successful, but there was an issue creating your account. Our team has been notified and will contact you shortly to resolve this.');
               setMessageType('error');
+              
+              // Send error report to backend
+              try {
+                await fetch('/api/error-report', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    type: 'payment_account_creation_failed',
+                    email,
+                    customer_id,
+                    payment_intent_id: paymentIntent.id,
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                  })
+                });
+              } catch (reportError) {
+                console.error('Failed to send error report:', reportError);
+              }
             }
           }
         };
@@ -174,7 +230,7 @@ const CheckoutForm: React.FC<{ onSuccess: (user: { id: string; email: string; fi
       }
     } catch (error) {
       console.error('Payment error:', error);
-      setMessage('An error occurred while processing your payment.');
+      setMessage(error instanceof Error ? error.message : 'An unexpected error occurred during payment processing. Please try again.');
       setMessageType('error');
     } finally {
       setLoading(false);

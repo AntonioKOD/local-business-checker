@@ -1,75 +1,85 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { rateLimitMiddleware, rateLimitConfigs } from '@/lib/rate-limit';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2023-10-16'
+});
 
 export async function POST(request: Request) {
-  if (!process.env.STRIPE_SECRET_KEY) {
-    return NextResponse.json(
-      { error: 'Payment processing not configured' },
-      { status: 500 }
-    );
-  }
-
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-  
   try {
+    // Apply rate limiting
+    const rateLimitResult = await rateLimitMiddleware(request, rateLimitConfigs.PAYMENT);
+    if (rateLimitResult) return rateLimitResult;
+
     const { email, firstName, lastName, password } = await request.json();
 
+    // Validate required fields
     if (!email || !firstName || !lastName || !password) {
       return NextResponse.json(
-        { error: 'Email, first name, last name, and password are required' },
+        { error: 'Missing required fields' },
         { status: 400 }
       );
     }
 
-    if (password.length < 8) {
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
       return NextResponse.json(
-        { error: 'Password must be at least 8 characters long' },
+        { error: 'Invalid email format' },
         { status: 400 }
       );
     }
 
-    // Create Stripe customer first
-    const customer = await stripe.customers.create({
-      email,
-      name: `${firstName} ${lastName}`,
-      metadata: {
-        firstName,
-        lastName,
-      },
-    });
+    // Create or get customer
+    let customer;
+    const existingCustomers = await stripe.customers.list({ email });
+    
+    if (existingCustomers.data.length > 0) {
+      customer = existingCustomers.data[0];
+    } else {
+      customer = await stripe.customers.create({
+        email,
+        name: `${firstName} ${lastName}`,
+        metadata: {
+          firstName,
+          lastName
+        }
+      });
+    }
 
-    // Create a simple payment intent for the first month
+    // Create payment intent
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: 700, // $7.00 in cents
+      amount: 700, // $7.00
       currency: 'usd',
       customer: customer.id,
-      setup_future_usage: 'off_session', // Save payment method for future use
+      automatic_payment_methods: {
+        enabled: true,
+      },
       metadata: {
         email,
         firstName,
         lastName,
-        password,
-        type: 'subscription_first_payment'
-      },
-    });
-
-    console.log('Payment intent created:', {
-      payment_intent_id: paymentIntent.id,
-      customer_id: customer.id,
-      has_client_secret: !!paymentIntent.client_secret
+        type: 'subscription_setup'
+      }
     });
 
     return NextResponse.json({
       client_secret: paymentIntent.client_secret,
-      payment_intent_id: paymentIntent.id,
-      customer_id: customer.id,
-      publishable_key: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+      customer_id: customer.id
     });
-
   } catch (error) {
     console.error('Payment intent creation error:', error);
+    
+    if (error instanceof Stripe.errors.StripeError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.statusCode || 500 }
+      );
+    }
+
     return NextResponse.json(
-      { error: `Payment error: ${error instanceof Error ? error.message : 'Unknown error'}` },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

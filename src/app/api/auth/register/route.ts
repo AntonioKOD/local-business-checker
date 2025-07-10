@@ -1,29 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getPayload } from 'payload';
-import config from '@/payload.config';
-import jwt from 'jsonwebtoken';
+import { NextResponse } from 'next/server';
+import { rateLimitMiddleware, rateLimitConfigs } from '@/lib/rate-limit';
+import payload from 'payload';
 
-interface CreateOptions {
-  collection: string;
-  data: Record<string, unknown>;
-}
-
-interface UserRecord {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  subscriptionStatus: string;
-}
-
-interface PayloadInstance {
-  create: (options: CreateOptions) => Promise<UserRecord>;
-}
-
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
+    // Apply rate limiting
+    const rateLimitResult = await rateLimitMiddleware(request, rateLimitConfigs.AUTH);
+    if (rateLimitResult) return rateLimitResult;
+
     const { email, password, firstName, lastName } = await request.json();
 
+    // Validate required fields
     if (!email || !password || !firstName || !lastName) {
       return NextResponse.json(
         { error: 'All fields are required' },
@@ -31,84 +18,68 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (password.length < 8) {
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
       return NextResponse.json(
-        { error: 'Password must be at least 8 characters long' },
+        { error: 'Invalid email format' },
         { status: 400 }
       );
     }
 
-    const payload = await getPayload({ config });
+    // Validate password strength
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordRegex.test(password)) {
+      return NextResponse.json(
+        { error: 'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character' },
+        { status: 400 }
+      );
+    }
 
     // Check if user already exists
-    const existingUsers = await payload.find({
+    const existingUser = await payload.find({
       collection: 'users',
       where: {
         email: {
-          equals: email,
+          equals: email.toLowerCase(),
         },
       },
     });
 
-    if (existingUsers.docs.length > 0) {
+    if (existingUser.totalDocs > 0) {
       return NextResponse.json(
-        { error: 'User already exists with this email' },
+        { error: 'User already exists' },
         { status: 409 }
       );
     }
 
-    // Create new user
-    const newUser = await (payload as PayloadInstance).create({
+    // Create user
+    const user = await payload.create({
       collection: 'users',
       data: {
-        email,
+        email: email.toLowerCase(),
         password,
         firstName,
         lastName,
-        subscriptionStatus: 'inactive', // Regular registration, not premium
-        stripeCustomerId: '',
-        subscriptionId: '',
-        totalSearches: 0,
+        roles: ['user'],
+        subscriptionStatus: 'free'
       },
     });
 
-    // Generate JWT token for automatic login
-    const token = jwt.sign(
-      { 
-        userId: newUser.id, 
-        email: newUser.email 
+    // Log the user in
+    const result = await payload.login({
+      collection: 'users',
+      data: {
+        email: email.toLowerCase(),
+        password,
       },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '7d' }
-    );
-
-    // Create response with user data
-    const response = NextResponse.json({
-      success: true,
-      user: {
-        id: newUser.id,
-        email: newUser.email,
-        firstName: newUser.firstName,
-        lastName: newUser.lastName,
-        subscriptionStatus: newUser.subscriptionStatus,
-      },
-      token,
     });
 
-    // Set HTTP-only cookie
-    response.cookies.set('auth-token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60, // 7 days
-    });
-
-    return response;
-
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Registration error:', error);
     return NextResponse.json(
-      { error: 'Registration failed' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

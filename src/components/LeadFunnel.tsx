@@ -7,21 +7,26 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStr
 interface Lead {
   id: string;
   businessName: string;
-  status: string;
+  placeId: string;
+  status: 'new' | 'contacted' | 'discussion' | 'proposal' | 'won' | 'lost';
   leadScore?: number;
   businessData?: Record<string, unknown>;
   contactedDate?: string;
-  notes?: string;
+  notes?: unknown;
   isWatched?: boolean;
   lastScanned?: string;
+  owner: {
+    id: string;
+    [key: string]: unknown;
+  };
 }
 import { SortableItem } from './SortableItem';
 import { Column } from './Column';
 import LeadDetailModal from './LeadDetailModal';
 import { Search, SlidersHorizontal } from 'lucide-react';
 
-// Define the columns for the Kanban board
-const initialColumns = {
+// Define the columns for the Kanban board with proper typing
+const initialColumns: Record<Lead['status'], ColumnData> = {
   'new': { id: 'new', title: 'New Leads', items: [] },
   'contacted': { id: 'contacted', title: 'Contacted', items: [] },
   'discussion': { id: 'discussion', title: 'In Discussion', items: [] },
@@ -31,13 +36,13 @@ const initialColumns = {
 };
 
 type ColumnData = {
-  id: string;
+  id: Lead['status'];
   title: string;
   items: Lead[];
 };
 
 const LeadFunnel = () => {
-  const [columns, setColumns] = useState<Record<string, ColumnData>>(initialColumns);
+  const [columns, setColumns] = useState<Record<Lead['status'], ColumnData>>(initialColumns);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -70,9 +75,8 @@ const LeadFunnel = () => {
         Object.values(newColumns).forEach(c => c.items = []); // Reset items
 
         leads.forEach(lead => {
-          if (newColumns[lead.status as keyof typeof newColumns]) {
-            newColumns[lead.status as keyof typeof newColumns].items.push(lead);
-          }
+          // Now TypeScript knows lead.status is a valid key
+          newColumns[lead.status].items.push(lead);
         });
 
         setColumns(newColumns);
@@ -130,14 +134,14 @@ const LeadFunnel = () => {
         const newIndexInOver = overIndex !== -1 ? overIndex : overItems.length;
 
         const [removed] = activeItems.splice(activeIndex, 1);
-        overItems.splice(newIndexInOver, 0, removed);
+        // Ensure overContainer is a valid status before updating
+        const newStatus = overContainer as Lead['status'];
+        const updatedLead = { ...removed, status: newStatus };
         
-        // Update the status of the moved lead
-        const updatedLead = { ...removed, status: overContainer };
-        overItems[newIndexInOver] = updatedLead;
+        overItems.splice(newIndexInOver, 0, updatedLead);
 
         // API call to update lead status
-        updateLeadStatus(updatedLead.id, overContainer);
+        updateLeadStatus(updatedLead.id, newStatus);
 
         return {
           ...prev,
@@ -154,16 +158,43 @@ const LeadFunnel = () => {
     }
   };
 
-  const updateLeadStatus = async (leadId: string, newStatus: string) => {
+  const updateLeadStatus = async (leadId: string, newStatus: Lead['status']) => {
     try {
-      await fetch(`/api/leads/${leadId}`, {
+      const response = await fetch(`/api/leads/${leadId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to update lead status');
+      }
+
+      return await response.json();
     } catch (error) {
       console.error("Failed to update lead status:", error);
-      // Here you might want to add error handling, like reverting the UI change
+      // Revert the UI change
+      setColumns(prev => {
+        const newColumns = JSON.parse(JSON.stringify(prev));
+        // Find the lead in all columns
+        for (const columnId in newColumns) {
+          const column = newColumns[columnId as Lead['status']];
+          const leadIndex = column.items.findIndex((item: Lead) => item.id === leadId);
+          if (leadIndex !== -1) {
+            // Move it back to its original column
+            const lead = column.items[leadIndex];
+            column.items.splice(leadIndex, 1);
+            newColumns[lead.status].items.push(lead);
+            break;
+          }
+        }
+        return newColumns;
+      });
+      
+      // Show error to user
+      setError('Failed to update lead status. Please try again.');
+      // Clear error after 5 seconds
+      setTimeout(() => setError(null), 5000);
     }
   };
 
@@ -185,6 +216,32 @@ const LeadFunnel = () => {
     setSelectedLead(updatedLead);
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] p-4">
+        <div className="bg-red-50 text-red-800 p-4 rounded-lg mb-4 max-w-md text-center">
+          <p className="font-semibold mb-2">Error Loading Leads</p>
+          <p>{error}</p>
+        </div>
+        <button 
+          onClick={() => window.location.reload()}
+          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  // Memoize the filtered columns to prevent unnecessary recalculations
   const filteredColumns = React.useMemo(() => {
     const newColumns = JSON.parse(JSON.stringify(columns));
 
@@ -198,9 +255,6 @@ const LeadFunnel = () => {
 
     return newColumns;
   }, [columns, searchTerm, minLeadScore]);
-
-  if (loading) return <div className="text-center p-8">Loading leads...</div>;
-  if (error) return <div className="text-center p-8 text-red-500">Error: {error}</div>;
 
   return (
     <div className="container mx-auto px-4 py-8">
