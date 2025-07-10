@@ -16,8 +16,7 @@
     "@dnd-kit/sortable": "10.0.0",
     "@dnd-kit/utilities": "3.2.2",
     "@googlemaps/google-maps-services-js": "3.4.1",
-    "@next/third-parties": "15.3.4",
-    "@payloadcms/bundler-webpack": "1.0.7",
+    "@next/third-parties": "^15.3.4",
     "@payloadcms/db-mongodb": "3.44.0",
     "@payloadcms/next": "3.44.0",
     "@payloadcms/plugin-cloud": "3.0.2",
@@ -58,6 +57,7 @@
   "overrides": {
     "payload": "3.44.0",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "@payloadcms/bundler-webpack": "3.44.0"
   }
 }

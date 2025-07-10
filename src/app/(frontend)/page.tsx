@@ -288,8 +288,12 @@ export default function BusinessChecker() {
 
   const handleLogout = async () => {
     try {
+      // Use PayloadCMS logout endpoint
+      await fetch('/api/users/logout', { method: 'POST' });
+      // Also clear our custom auth endpoint as backup
       await fetch('/api/auth/logout', { method: 'POST' });
       localStorage.removeItem('auth-token');
+      localStorage.removeItem('user');
       setCurrentUser(null);
       setResults(null);
       setActiveTab('search');

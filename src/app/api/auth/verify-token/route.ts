@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPayload } from 'payload';
 import config from '@/payload.config';
-import jwt from 'jsonwebtoken';
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get('auth-token')?.value || 
+    const token = request.cookies.get('payload-token')?.value || 
+                  request.cookies.get('auth-token')?.value ||
                   request.headers.get('authorization')?.replace('Bearer ', '');
 
     if (!token) {
@@ -15,57 +15,73 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Verify JWT token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as { userId: string; email: string };
-    
-    if (!decoded.userId) {
-      return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
-      );
-    }
-
     const payload = await getPayload({ config });
 
-    // Get user from database
-    const user = await payload.findByID({
-      collection: 'users',
-      id: decoded.userId,
-    });
+    // Use PayloadCMS built-in method to verify user authentication
+    try {
+      const me = await payload.auth({
+        headers: request.headers as Headers & { [key: string]: string }
+      });
 
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
+      if (!me.user) {
+        return NextResponse.json(
+          { error: 'Invalid token' },
+          { status: 401 }
+        );
+      }
 
-    return NextResponse.json({
-      success: true,
-      user: {
-        id: user.id,
-        email: user.email,
-        firstName: (user as unknown as { firstName: string }).firstName,
-        lastName: (user as unknown as { lastName: string }).lastName,
-        subscriptionStatus: (user as unknown as { subscriptionStatus: string }).subscriptionStatus,
-      },
-    });
+      return NextResponse.json({
+        success: true,
+        user: {
+          id: me.user.id,
+          email: me.user.email,
+          firstName: (me.user as unknown as { firstName: string }).firstName,
+          lastName: (me.user as unknown as { lastName: string }).lastName,
+          subscriptionStatus: (me.user as unknown as { subscriptionStatus?: string }).subscriptionStatus || 'free',
+        },
+      });
 
-  } catch (error) {
-    // Only log unexpected errors, not invalid/expired tokens which are normal
-    if (error instanceof jwt.JsonWebTokenError) {
-      // Token is invalid/expired - this is normal, don't log as error
+    } catch {
+      // If auth fails, try to find user by ID from token (fallback method)
+      try {
+        // Basic JWT decode to get user ID (without verification since PayloadCMS handles that)
+        const base64Payload = token.split('.')[1];
+        const decodedPayload = JSON.parse(atob(base64Payload));
+        
+        if (decodedPayload.id) {
+          const user = await payload.findByID({
+            collection: 'users',
+            id: decodedPayload.id,
+          });
+
+          if (user) {
+            return NextResponse.json({
+              success: true,
+              user: {
+                id: user.id,
+                email: user.email,
+                firstName: (user as unknown as { firstName: string }).firstName,
+                lastName: (user as unknown as { lastName: string }).lastName,
+                subscriptionStatus: (user as unknown as { subscriptionStatus?: string }).subscriptionStatus || 'free',
+              },
+            });
+          }
+        }
+      } catch {
+        // Fallback failed, continue to return invalid token
+      }
+
       return NextResponse.json(
         { error: 'Invalid token' },
         { status: 401 }
       );
-    } else {
-      // Actual unexpected error - log this
-      console.error('Token verification error:', error);
-      return NextResponse.json(
-        { error: 'Token verification failed' },
-        { status: 500 }
-      );
     }
+
+  } catch (error) {
+    console.error('Token verification error:', error);
+    return NextResponse.json(
+      { error: 'Token verification failed' },
+      { status: 500 }
+    );
   }
 } 

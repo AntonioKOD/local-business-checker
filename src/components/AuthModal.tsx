@@ -34,30 +34,85 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) => {
     setError(null);
 
     try {
-      const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/register';
-      const body = mode === 'login' 
-        ? { email: formData.email, password: formData.password }
-        : formData;
+      if (mode === 'login') {
+        // Use PayloadCMS built-in login endpoint
+        const response = await fetch('/api/users/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password
+          }),
+        });
 
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-      });
+        const data = await response.json();
 
-      const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.message || data.error || 'Login failed');
+        }
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Authentication failed');
+        // PayloadCMS login response format
+        if (data.user && data.token) {
+          // Store token in localStorage
+          localStorage.setItem('auth-token', data.token);
+          localStorage.setItem('user', JSON.stringify(data.user));
+
+          onAuthSuccess(data.user, data.token);
+        } else {
+          throw new Error('Invalid response from server');
+        }
+      } else {
+        // For registration, first create user with PayloadCMS
+        const response = await fetch('/api/users', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password,
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            subscriptionStatus: 'free'
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || data.error || 'Registration failed');
+        }
+
+        // After successful registration, automatically log in
+        const loginResponse = await fetch('/api/users/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password
+          }),
+        });
+
+        const loginData = await loginResponse.json();
+
+        if (!loginResponse.ok) {
+          throw new Error(loginData.message || loginData.error || 'Auto-login failed');
+        }
+
+        if (loginData.user && loginData.token) {
+          // Store token in localStorage
+          localStorage.setItem('auth-token', loginData.token);
+          localStorage.setItem('user', JSON.stringify(loginData.user));
+
+          onAuthSuccess(loginData.user, loginData.token);
+        } else {
+          throw new Error('Invalid response from server');
+        }
       }
-
-      // Store token in localStorage and cookies are set by the server
-      localStorage.setItem('auth-token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-
-      onAuthSuccess(data.user, data.token);
 
     } catch (error) {
       console.error('Auth error:', error);
