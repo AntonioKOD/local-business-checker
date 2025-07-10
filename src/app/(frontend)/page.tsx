@@ -1,10 +1,46 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, MapPin, Globe, CheckCircle, XCircle, AlertCircle, Crown, LogOut, BarChart3 } from 'lucide-react';
+import Link from 'next/link';
+import { Search, MapPin, Globe, CheckCircle, XCircle, AlertCircle, Crown, LogOut, BarChart3, TrendingUp, Zap, Lightbulb, Briefcase, Bell } from 'lucide-react';
 import PaymentModal from '@/components/PaymentModal';
 import AnalyticsDashboard from '@/components/AnalyticsDashboard';
 import AuthModal from '@/components/AuthModal';
+import WebsiteReportModal from '@/components/WebsiteReportModal';
+import LeadFunnel from '@/components/LeadFunnel';
+import NotificationsPanel from '@/components/NotificationsPanel';
+
+// Enhanced interfaces to match backend
+interface WebsiteStatus {
+  accessible: boolean;
+  status_code: number;
+  error?: string;
+  load_time?: number;
+  ssl_certificate?: boolean;
+  mobile_friendly?: boolean;
+  last_checked?: string;
+}
+
+interface WebsiteQuality {
+  overall_score: number;
+  seo_score: number;
+  performance_score: number;
+  design_score: number;
+  content_score: number;
+  technical_score: number;
+  issues: string[];
+  recommendations: string[];
+  last_analyzed?: string;
+}
+
+interface BusinessInsights {
+  estimated_age: string;
+  business_size: 'small' | 'medium' | 'large';
+  digital_presence: 'strong' | 'moderate' | 'weak' | 'none';
+  opportunity_score: number;
+  recommended_services: string[];
+  last_updated?: string;
+}
 
 interface Business {
   name: string;
@@ -13,17 +49,25 @@ interface Business {
   review_count: number;
   phone: string;
   website: string;
-  website_status: {
-    accessible: boolean;
-    status_code: number;
-    error?: string;
-    load_time?: number;
-  };
+  website_status: WebsiteStatus;
   place_id: string;
   location: {
     lat: number;
     lng: number;
   };
+  lead_score?: number;
+  website_quality?: WebsiteQuality;
+  business_insights?: BusinessInsights;
+}
+
+interface MarketAnalysis {
+  market_saturation: 'low' | 'medium' | 'high';
+  website_adoption_rate: number;
+  average_rating: number;
+  competition_level: 'low' | 'medium' | 'high';
+  opportunity_score: number;
+  top_competitors: Business[];
+  market_gaps: string[];
 }
 
 interface SearchResults {
@@ -35,6 +79,9 @@ interface SearchResults {
     no_website_count: number;
     website_percentage: number;
     accessible_percentage: number;
+    average_rating: number;
+    high_opportunity_count: number;
+    market_analysis?: MarketAnalysis | null;
   };
   payment_info: {
     is_free_user: boolean;
@@ -55,13 +102,18 @@ export default function BusinessChecker() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [currentUser, setCurrentUser] = useState<{ id: string; email: string; firstName: string; lastName: string; subscriptionStatus?: string } | null>(null);
-  const [activeTab, setActiveTab] = useState<'search' | 'analytics'>('search');
+  const [activeTab, setActiveTab] = useState<'search' | 'analytics' | 'funnel'>('search');
   const [authLoading, setAuthLoading] = useState(true);
+  const [reportUrl, setReportUrl] = useState<string | null>(null);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   
   // Premium search settings (only for logged-in users)
   const [maxResults, setMaxResults] = useState(10);
   const [filterNoWebsite, setFilterNoWebsite] = useState(false);
   const [radiusMiles, setRadiusMiles] = useState(10); // Default 10 miles
+  const [minRating, setMinRating] = useState(0);
+  const [minLeadScore, setMinLeadScore] = useState(0);
   
   // Analytics data
   const [analyticsData, setAnalyticsData] = useState<{
@@ -78,6 +130,7 @@ export default function BusinessChecker() {
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [lastSearchTime, setLastSearchTime] = useState(0);
   const SEARCH_DEBOUNCE_MS = 2000; // Minimum 2 seconds between searches
+  const [addingLead, setAddingLead] = useState<string | null>(null);
 
   const checkAuthStatus = useCallback(async () => {
     if (!authLoading) return; // Only check if we're currently in loading state
@@ -126,6 +179,26 @@ export default function BusinessChecker() {
     }
   }, [activeTab, currentUser, analyticsData, fetchAnalyticsData]);
 
+  // Fetch unread notification count
+  useEffect(() => {
+    if (currentUser) {
+      const fetchCount = async () => {
+        try {
+          // This re-uses the notifications endpoint, which is slightly inefficient
+          // In a real app, you might create a dedicated count endpoint.
+          const response = await fetch(`/api/notifications?userId=${currentUser.id}&unread=true`);
+          if(response.ok) {
+            const data = await response.json();
+            setUnreadCount(data.length);
+          }
+        } catch (error) {
+          console.error("Failed to fetch notification count", error);
+        }
+      };
+      fetchCount();
+    }
+  }, [currentUser]);
+
   // Show loading while checking authentication
   if (authLoading) {
     return (
@@ -173,6 +246,8 @@ export default function BusinessChecker() {
           maxResults: currentUser ? maxResults : 10,
           filterNoWebsite: currentUser ? filterNoWebsite : false,
           radiusKm: radiusMiles * 1.60934, // Convert miles to kilometers
+          minRating: currentUser ? minRating : 0,
+          minLeadScore: currentUser ? minLeadScore : 0,
         }),
       });
 
@@ -244,6 +319,36 @@ export default function BusinessChecker() {
     }
   };
 
+  const handleAddLead = async (business: Business) => {
+    if (!currentUser) {
+      setError("Please log in to add leads.");
+      setShowAuthModal(true);
+      return;
+    }
+
+    setAddingLead(business.place_id);
+    try {
+      const response = await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ business, userId: currentUser.id }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to add lead.');
+      }
+
+      // Optionally, give some feedback to the user
+      alert(`${business.name} has been added to your lead funnel!`);
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred while adding lead.");
+    } finally {
+      setAddingLead(null);
+    }
+  };
+
   return (
     <>
       {/* Structured Data for SEO */}
@@ -286,35 +391,59 @@ export default function BusinessChecker() {
 
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md shadow-sm border-b border-white/20 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                BusinessChecker
-              </h1>
+      <header className="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-40">
+        <div className="container mx-auto px-4">
+          <div className="flex justify-between items-center py-3">
+            <div className="flex items-center space-x-4">
+              <Link href="/" className="flex items-center space-x-2">
+                <Briefcase className="w-7 h-7 text-blue-600" />
+                <h1 className="text-2xl font-bold text-gray-800 tracking-tight">BusinessChecker</h1>
+              </Link>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               {currentUser ? (
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-2 bg-gradient-to-r from-yellow-50 to-orange-50 px-3 py-2 rounded-full border border-yellow-200">
-                    <Crown className="w-4 h-4 text-yellow-600" />
-                    <span className="text-sm font-medium text-gray-700">
-                      {currentUser.firstName} {currentUser.lastName}
-                    </span>
-                    <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-medium">
-                      Premium
-                    </span>
-                  </div>
+                <>
                   <button
-                    onClick={handleLogout}
-                    className="flex items-center space-x-1 text-gray-600 hover:text-gray-800 transition-colors"
+                    onClick={() => setActiveTab('search')}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                      activeTab === 'search' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'
+                    }`}
                   >
-                    <LogOut className="w-4 h-4" />
-                    <span className="text-sm">Logout</span>
+                    <Search className="w-4 h-4 inline-block mr-1.5" />
+                    Search
                   </button>
-                </div>
+                  <button
+                    onClick={() => setActiveTab('analytics')}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                      activeTab === 'analytics' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <BarChart3 className="w-4 h-4 inline-block mr-1.5" />
+                    Analytics
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('funnel')}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                      activeTab === 'funnel' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <TrendingUp className="w-4 h-4 inline-block mr-1.5" />
+                    Lead Funnel
+                  </button>
+                  <div className="flex items-center space-x-2 pl-4 border-l border-gray-200">
+                    <button onClick={() => setShowNotifications(!showNotifications)} className="relative p-2 rounded-full hover:bg-gray-100">
+                      <Bell className="w-5 h-5 text-gray-600"/>
+                      {unreadCount > 0 && (
+                        <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
+                      )}
+                    </button>
+                    <span className="text-sm text-gray-600 hidden sm:inline">{currentUser.firstName} {currentUser.lastName}</span>
+                    <button onClick={handleLogout} className="text-gray-500 hover:text-red-600" title="Logout">
+                      <LogOut className="w-5 h-5" />
+                    </button>
+                  </div>
+                </>
               ) : (
                 <div className="flex space-x-3">
                   <button
@@ -335,6 +464,13 @@ export default function BusinessChecker() {
           </div>
         </div>
       </header>
+
+      {showNotifications && currentUser && (
+        <NotificationsPanel 
+          userId={currentUser.id}
+          onClose={() => setShowNotifications(false)}
+        />
+      )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Premium User Navigation */}
@@ -360,6 +496,16 @@ export default function BusinessChecker() {
                 }`}
               >
                 Analytics Dashboard
+              </button>
+              <button
+                onClick={() => setActiveTab('funnel')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'funnel'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Lead Funnel
               </button>
             </nav>
           </div>
@@ -477,8 +623,8 @@ export default function BusinessChecker() {
 
                 {/* Premium Search Options - Only visible for logged-in users */}
                 {currentUser && (
-                  <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-2xl p-6 space-y-4">
-                    <div className="flex items-center space-x-2 mb-4">
+                  <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-2xl p-6 space-y-6">
+                    <div className="flex items-center space-x-2 mb-2">
                       <Crown className="w-5 h-5 text-yellow-600" />
                       <h3 className="text-lg font-bold text-gray-900">Premium Search Options</h3>
                     </div>
@@ -519,10 +665,30 @@ export default function BusinessChecker() {
                           <option value={50}>50 miles</option>
                         </select>
                       </div>
-                      
+
                       <div className="group">
+                        <label htmlFor="minRating" className="block text-sm font-semibold text-gray-700 mb-2">
+                          Minimum Rating
+                        </label>
+                        <select
+                          id="minRating"
+                          value={minRating}
+                          onChange={(e) => setMinRating(parseFloat(e.target.value))}
+                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-black bg-white"
+                        >
+                          <option value={0}>Any</option>
+                          <option value={3}>3.0+</option>
+                          <option value={3.5}>3.5+</option>
+                          <option value={4}>4.0+</option>
+                          <option value={4.5}>4.5+</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-6">
+                       <div className="group">
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Filter Options
+                          Filter by Website Status
                         </label>
                         <div className="flex items-center space-x-3 p-3 border-2 border-gray-200 rounded-xl bg-white">
                           <input
@@ -533,8 +699,26 @@ export default function BusinessChecker() {
                             className="w-4 h-4 text-blue-600 bg-white border-2 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                           />
                           <label htmlFor="filterNoWebsite" className="text-sm font-medium text-gray-700 cursor-pointer">
-                            Show only businesses without websites
+                            Only businesses without websites
                           </label>
+                        </div>
+                      </div>
+
+                      <div className="group">
+                        <label htmlFor="minLeadScore" className="block text-sm font-semibold text-gray-700 mb-2">
+                          Minimum Lead Score
+                        </label>
+                        <input
+                          type="range"
+                          id="minLeadScore"
+                          min="0"
+                          max="100"
+                          value={minLeadScore}
+                          onChange={(e) => setMinLeadScore(parseInt(e.target.value))}
+                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                        />
+                         <div className="text-center text-sm text-gray-600 mt-1">
+                          {minLeadScore} / 100
                         </div>
                       </div>
                     </div>
@@ -616,7 +800,7 @@ export default function BusinessChecker() {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
                     <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 text-center shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105">
                       <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
                         <Globe className="w-6 h-6 text-white" />
@@ -631,13 +815,6 @@ export default function BusinessChecker() {
                       <div className="text-3xl font-bold text-green-700 mb-1">{results.statistics.businesses_with_websites}</div>
                       <div className="text-sm font-medium text-green-600">With Websites</div>
                     </div>
-                    <div className="bg-gradient-to-br from-emerald-50 to-teal-100 rounded-2xl p-6 text-center shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105">
-                      <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <Globe className="w-6 h-6 text-white" />
-                      </div>
-                      <div className="text-3xl font-bold text-emerald-700 mb-1">{results.statistics.accessible_websites}</div>
-                      <div className="text-sm font-medium text-emerald-600">Accessible</div>
-                    </div>
                     <div className="bg-gradient-to-br from-red-50 to-orange-100 rounded-2xl p-6 text-center shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105">
                       <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-orange-600 rounded-full flex items-center justify-center mx-auto mb-3">
                         <XCircle className="w-6 h-6 text-white" />
@@ -645,7 +822,53 @@ export default function BusinessChecker() {
                       <div className="text-3xl font-bold text-red-700 mb-1">{results.statistics.no_website_count}</div>
                       <div className="text-sm font-medium text-red-600">No Website</div>
                     </div>
+                    {/* New Stat: High Opportunity Leads */}
+                    {currentUser && (
+                      <div className="bg-gradient-to-br from-yellow-50 to-amber-100 rounded-2xl p-6 text-center shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105">
+                        <div className="w-12 h-12 bg-gradient-to-r from-yellow-500 to-amber-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                          <Zap className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="text-3xl font-bold text-yellow-700 mb-1">{results.statistics.high_opportunity_count}</div>
+                        <div className="text-sm font-medium text-yellow-600">High Opportunity</div>
+                      </div>
+                    )}
                   </div>
+
+                  {/* New Section: Market Analysis for Premium Users */}
+                  {currentUser && results.statistics.market_analysis && (
+                    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl p-6 mb-8 border-2 border-indigo-100 shadow-lg">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center">
+                          <TrendingUp className="w-6 h-6 text-white" />
+                        </div>
+                        <h3 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+                          Market Analysis
+                        </h3>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                        <div className="text-center bg-white/50 rounded-xl p-4">
+                          <div className="text-2xl font-bold text-indigo-700">{results.statistics.market_analysis.opportunity_score}%</div>
+                          <div className="text-sm font-medium text-indigo-600">Market Opportunity</div>
+                        </div>
+                        <div className="text-center bg-white/50 rounded-xl p-4">
+                          <div className="text-2xl font-bold text-purple-700">{results.statistics.market_analysis.website_adoption_rate}%</div>
+                          <div className="text-sm font-medium text-purple-600">Website Adoption</div>
+                        </div>
+                        <div className="text-center bg-white/50 rounded-xl p-4">
+                          <div className="text-2xl font-bold text-pink-700">{results.statistics.market_analysis.average_rating.toFixed(1)}/5</div>
+                          <div className="text-sm font-medium text-pink-600">Average Rating</div>
+                        </div>
+                      </div>
+                      <div className="mt-4 space-y-2">
+                        {results.statistics.market_analysis.market_gaps.map((gap, i) => (
+                          <div key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                            <Lightbulb className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                            <span>{gap}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-6 border border-purple-200 shadow-lg">
@@ -709,6 +932,25 @@ export default function BusinessChecker() {
                           </div>
                         </div>
                         
+                        {/* Lead Score for Premium Users */}
+                        {currentUser && business.lead_score !== undefined && (
+                          <div className="my-4">
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                                <Zap className="w-4 h-4 text-yellow-500" />
+                                Lead Score
+                              </span>
+                              <span className="text-sm font-bold text-blue-600">{business.lead_score.toFixed(0)} / 100</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2.5">
+                              <div 
+                                className="bg-gradient-to-r from-yellow-400 to-orange-500 h-2.5 rounded-full" 
+                                style={{ width: `${business.lead_score}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        )}
+
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                           <div className="space-y-3">
                             <div className="flex items-center space-x-3">
@@ -755,6 +997,64 @@ export default function BusinessChecker() {
                             </div>
                           </div>
                         </div>
+
+                        {/* Premium Features & Actions */}
+                        {currentUser && results.payment_info.upgrade_price === 0 && (
+                          <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
+                            <button
+                              onClick={() => setReportUrl(business.website)}
+                              className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
+                            >
+                              <Zap className="w-4 h-4 mr-1.5" />
+                              Deep Dive
+                            </button>
+                             <button
+                              onClick={() => handleAddLead(business)}
+                              disabled={addingLead === business.place_id}
+                              className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all disabled:opacity-50"
+                            >
+                              <TrendingUp className="w-4 h-4 mr-1.5" />
+                              {addingLead === business.place_id ? 'Adding...' : 'Add to Funnel'}
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Premium Business Insights */}
+                        {currentUser && business.business_insights && (
+                          <div className="mt-6 pt-6 border-t border-gray-200/80">
+                            <h5 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                              <Briefcase className="w-5 h-5 text-indigo-500" />
+                              Premium Insights
+                            </h5>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                              <div className="bg-gray-100/70 p-3 rounded-lg">
+                                <p className="font-semibold text-gray-600">Digital Presence</p>
+                                <p className="font-bold text-gray-900 capitalize">{business.business_insights.digital_presence}</p>
+                              </div>
+                              <div className="bg-gray-100/70 p-3 rounded-lg">
+                                <p className="font-semibold text-gray-600">Opportunity Score</p>
+                                <p className="font-bold text-green-600">{business.business_insights.opportunity_score}/100</p>
+                              </div>
+                              <div className="bg-gray-100/70 p-3 rounded-lg">
+                                <p className="font-semibold text-gray-600">Business Size</p>
+                                <p className="font-bold text-gray-900 capitalize">{business.business_insights.business_size}</p>
+                              </div>
+                            </div>
+                             <div className="mt-4">
+                                <h6 className="font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                                  <Lightbulb className="w-4 h-4 text-yellow-500" />
+                                  Recommended Services
+                                </h6>
+                                <div className="flex flex-wrap gap-2">
+                                  {business.business_insights.recommended_services.map(service => (
+                                    <span key={service} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
+                                      {service}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -762,6 +1062,10 @@ export default function BusinessChecker() {
               </div>
             )}
           </>
+        )}
+
+        {activeTab === 'funnel' && currentUser && (
+          <LeadFunnel />
         )}
       </div>
 
@@ -778,6 +1082,15 @@ export default function BusinessChecker() {
         <AuthModal
           onClose={() => setShowAuthModal(false)}
           onAuthSuccess={handleAuthSuccess}
+        />
+      )}
+
+      {/* Website Report Modal */}
+      {reportUrl && (
+        <WebsiteReportModal
+          url={reportUrl}
+          userId={currentUser?.id || null}
+          onClose={() => setReportUrl(null)}
         />
       )}
       </div>

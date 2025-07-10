@@ -336,7 +336,7 @@ const CheckoutForm: React.FC<{ onSuccess: (user: { id: string; email: string; fi
         ) : (
           <>
             <Crown className="w-5 h-5" />
-            <span>Start Premium Subscription - $20/month</span>
+            <span>Start Premium Subscription - $7/month</span>
           </>
         )}
       </button>

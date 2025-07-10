@@ -179,6 +179,19 @@ export async function POST(request: NextRequest) {
     // Calculate statistics based on ALL results found (but show limited results)
     const businessesWithWebsites = results.filter(b => b.website && b.website !== 'N/A').length;
     const accessibleWebsites = results.filter(b => b.website_status?.accessible).length;
+    
+    // Calculate average rating
+    const ratings = results
+      .map(b => typeof b.rating === 'number' ? b.rating : 0)
+      .filter(r => r > 0);
+    const averageRating = ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
+    
+    // Count high opportunity businesses (lead score > 70)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const highOpportunityCount = results.filter(b => (b as any).lead_score && (b as any).lead_score > 70).length;
+    
+    // Generate market analysis
+    const marketAnalysis = checker.generateMarketAnalysis(results);
 
     const response: SearchResults = {
       businesses: limitedResults,
@@ -188,7 +201,10 @@ export async function POST(request: NextRequest) {
         accessible_websites: accessibleWebsites,
         no_website_count: results.length - businessesWithWebsites,
         website_percentage: results.length > 0 ? Math.round((businessesWithWebsites / results.length) * 100 * 10) / 10 : 0,
-        accessible_percentage: businessesWithWebsites > 0 ? Math.round((accessibleWebsites / businessesWithWebsites) * 100 * 10) / 10 : 0
+        accessible_percentage: businessesWithWebsites > 0 ? Math.round((accessibleWebsites / businessesWithWebsites) * 100 * 10) / 10 : 0,
+        average_rating: Math.round(averageRating * 10) / 10,
+        high_opportunity_count: highOpportunityCount,
+        market_analysis: marketAnalysis
       },
       payment_info: {
         is_free_user: !isSubscribed,

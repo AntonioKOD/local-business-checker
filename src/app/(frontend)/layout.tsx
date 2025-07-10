@@ -1,5 +1,5 @@
 import React from 'react'
-import './globals.css'
+import './global.css'
 import type { Metadata } from 'next'
 import {GoogleAnalytics} from '@next/third-parties/google'
 
