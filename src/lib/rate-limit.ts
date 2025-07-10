@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { headers } from 'next/headers';
 
 interface RateLimitConfig {
   interval: number; // Time window in seconds
@@ -106,8 +105,9 @@ export async function rateLimitMiddleware(
   request: Request,
   config: RateLimitConfig = DEFAULT_CONFIG
 ) {
-  const headersList = headers();
-  const ip = headersList.get('x-forwarded-for') || 'unknown';
+  // Extract IP from request headers
+  const forwardedFor = request.headers.get('x-forwarded-for');
+  const ip = forwardedFor?.split(',')[0] || 'unknown';
   const identifier = `${request.method}:${new URL(request.url).pathname}:${ip}`;
   
   const result = await rateLimit(identifier, config);

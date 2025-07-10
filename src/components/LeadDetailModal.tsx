@@ -15,11 +15,18 @@ interface BusinessData {
 interface Lead {
   id: string;
   businessName: string;
+  placeId: string;
+  status: 'new' | 'contacted' | 'discussion' | 'proposal' | 'won' | 'lost';
+  leadScore: number;
   businessData: BusinessData;
+  contactedDate?: string;
   notes?: string;
   isWatched?: boolean;
-  leadScore: number;
-  status: string;
+  lastScanned?: string;
+  owner: {
+    id: string;
+    [key: string]: unknown;
+  };
 }
 
 interface LeadDetailModalProps {

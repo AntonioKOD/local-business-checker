@@ -4,15 +4,24 @@ import React, { useState, useEffect } from 'react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy } from '@dnd-kit/sortable';
 // Define Lead interface locally since payload types are not available
+interface BusinessData {
+  name: string;
+  address: string;
+  phone?: string;
+  website?: string;
+  rating: number;
+  review_count: number;
+}
+
 interface Lead {
   id: string;
   businessName: string;
   placeId: string;
   status: 'new' | 'contacted' | 'discussion' | 'proposal' | 'won' | 'lost';
-  leadScore?: number;
-  businessData?: Record<string, unknown>;
+  leadScore: number;
+  businessData: BusinessData;
   contactedDate?: string;
-  notes?: unknown;
+  notes?: string;
   isWatched?: boolean;
   lastScanned?: string;
   owner: {
@@ -58,6 +67,21 @@ const LeadFunnel = () => {
     })
   );
 
+  // Memoize the filtered columns to prevent unnecessary recalculations
+  const filteredColumns = React.useMemo(() => {
+    const newColumns = JSON.parse(JSON.stringify(columns));
+
+    for (const columnId in newColumns) {
+      newColumns[columnId].items = newColumns[columnId].items.filter((lead: Lead) => {
+        const searchMatch = lead.businessName.toLowerCase().includes(searchTerm.toLowerCase());
+        const leadScoreMatch = (lead.leadScore || 0) >= minLeadScore;
+        return searchMatch && leadScoreMatch;
+      });
+    }
+
+    return newColumns;
+  }, [columns, searchTerm, minLeadScore]);
+
   useEffect(() => {
     const fetchLeads = async () => {
       try {
@@ -100,8 +124,8 @@ const LeadFunnel = () => {
 
     if (activeId === overId) return;
 
-    const activeContainer = active.data.current?.sortable.containerId;
-    const overContainer = over.data.current?.sortable.containerId || overId;
+    const activeContainer = active.data.current?.sortable.containerId as Lead['status'];
+    const overContainer = (over.data.current?.sortable.containerId || overId) as Lead['status'];
 
     if (activeContainer === overContainer) {
       // Moving within the same column
@@ -135,7 +159,7 @@ const LeadFunnel = () => {
 
         const [removed] = activeItems.splice(activeIndex, 1);
         // Ensure overContainer is a valid status before updating
-        const newStatus = overContainer as Lead['status'];
+        const newStatus = overContainer;
         const updatedLead = { ...removed, status: newStatus };
         
         overItems.splice(newIndexInOver, 0, updatedLead);
@@ -224,7 +248,7 @@ const LeadFunnel = () => {
     );
   }
 
-  if (error) {
+  if (error && !columns) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] p-4">
         <div className="bg-red-50 text-red-800 p-4 rounded-lg mb-4 max-w-md text-center">
@@ -241,25 +265,22 @@ const LeadFunnel = () => {
     );
   }
 
-  // Memoize the filtered columns to prevent unnecessary recalculations
-  const filteredColumns = React.useMemo(() => {
-    const newColumns = JSON.parse(JSON.stringify(columns));
-
-    for (const columnId in newColumns) {
-      newColumns[columnId].items = newColumns[columnId].items.filter((lead: Lead) => {
-        const searchMatch = lead.businessName.toLowerCase().includes(searchTerm.toLowerCase());
-        const leadScoreMatch = (lead.leadScore || 0) >= minLeadScore;
-        return searchMatch && leadScoreMatch;
-      });
-    }
-
-    return newColumns;
-  }, [columns, searchTerm, minLeadScore]);
-
   return (
     <div className="container mx-auto px-4 py-8">
-       <h1 className="text-3xl font-bold text-gray-800 mb-6">Lead Funnel</h1>
-
+      <h1 className="text-3xl font-bold text-gray-800 mb-6">Lead Funnel</h1>
+      
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-4 flex justify-between items-center">
+          <p>{error}</p>
+          <button 
+            onClick={() => setError(null)}
+            className="text-red-600 hover:text-red-800"
+          >
+            ×
+          </button>
+        </div>
+      )}
+      
       {/* Filter and Search Controls */}
       <div className="mb-6 p-4 bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -306,7 +327,7 @@ const LeadFunnel = () => {
           {Object.values(columns).map((column) => (
             <Column key={column.id} id={column.id} title={column.title} items={filteredColumns[column.id].items}>
                 <SortableContext items={column.items.map(i => i.id)} strategy={rectSortingStrategy}>
-                    {filteredColumns[column.id].items.map(lead => (
+                    {filteredColumns[column.id].items.map((lead: Lead) => (
                       <SortableItem 
                         key={lead.id} 
                         id={lead.id} 

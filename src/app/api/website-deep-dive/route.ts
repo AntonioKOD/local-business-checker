@@ -1,94 +1,161 @@
-import { NextRequest, NextResponse } from 'next/server';
-// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-require-imports
-const Wappalyzer = require('wappalyzer') as any;
+import { NextResponse } from 'next/server';
+import puppeteer from 'puppeteer';
 
-const options = {
-  debug: false,
-  delay: 500,
-  maxDepth: 3,
-  maxUrls: 10,
-  maxWait: 10000,
-  recursive: true,
-  userAgent: 'BusinessChecker/1.0',
-  htmlMaxCols: 2000,
-  htmlMaxRows: 2000,
-};
+interface WebsiteData {
+  title: string;
+  metaDescription: string;
+  textLength: number;
+  technologies: string[];
+  forms: Array<{
+    action: string;
+    method: string;
+    inputs: number;
+  }>;
+  socialLinks: string[];
+  hasContactForm: boolean;
+}
 
-// Simple in-memory cache for API results
-const analysisCache = new Map<string, { data: unknown; timestamp: number }>();
-const CACHE_DURATION_MS = 60 * 60 * 1000; // 1 hour cache
-
-async function getPageSpeedInsights(url: string) {
-  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
-  if (!apiKey) {
-    console.log('Google API Key not found, skipping PageSpeed Insights.');
-    return null;
-  }
-  
-  const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&key=${apiKey}&category=PERFORMANCE&category=ACCESSIBILITY&category=SEO`;
-  
+export async function POST(request: Request) {
   try {
-    const response = await fetch(apiUrl);
-    if (!response.ok) {
-      console.error(`PageSpeed API error: ${response.status}`);
-      return null;
+    const { url } = await request.json();
+
+    if (!url) {
+      return NextResponse.json({ error: 'URL is required' }, { status: 400 });
     }
-    const data = await response.json();
-    
-    return {
-      performance: data.lighthouseResult.categories.performance.score * 100,
-      accessibility: data.lighthouseResult.categories.accessibility.score * 100,
-      seo: data.lighthouseResult.categories.seo.score * 100,
-      lcp: data.lighthouseResult.audits['largest-contentful-paint'].displayValue,
-      cls: data.lighthouseResult.audits['cumulative-layout-shift'].displayValue,
-    };
+
+    // Launch Puppeteer
+    const browser = await puppeteer.launch({ 
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+    const page = await browser.newPage();
+
+    // Basic user agent
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+
+    try {
+      // Navigate to the website
+      await page.goto(url, { 
+        waitUntil: 'networkidle0',
+        timeout: 30000 
+      });
+
+      // Extract basic information
+      const websiteData: WebsiteData = await page.evaluate(() => {
+        // Get page title
+        const title = document.title;
+        
+        // Get meta description
+        const metaDescription = document.querySelector('meta[name="description"]')?.getAttribute('content') || '';
+        
+        // Get all text content
+        const textContent = document.body.innerText;
+        
+        // Simple technology detection based on common patterns
+        const technologies = [];
+        
+        // Check for common frameworks/libraries
+        if (window.React || document.querySelector('[data-reactroot]')) {
+          technologies.push('React');
+        }
+        if (window.Vue) {
+          technologies.push('Vue.js');
+        }
+        if (window.jQuery || window.$) {
+          technologies.push('jQuery');
+        }
+        if (window.angular) {
+          technologies.push('AngularJS');
+        }
+        if (document.querySelector('meta[name="generator"]')?.getAttribute('content')?.includes('WordPress')) {
+          technologies.push('WordPress');
+        }
+        if (document.querySelector('script[src*="shopify"]')) {
+          technologies.push('Shopify');
+        }
+        if (document.querySelector('script[src*="wix"]')) {
+          technologies.push('Wix');
+        }
+        if (document.querySelector('script[src*="squarespace"]')) {
+          technologies.push('Squarespace');
+        }
+
+        // Get forms
+        const forms = Array.from(document.querySelectorAll('form')).map(form => ({
+          action: form.action,
+          method: form.method,
+          inputs: form.querySelectorAll('input').length
+        }));
+
+        // Get social media links
+        const socialLinks = Array.from(document.querySelectorAll('a[href*="facebook"], a[href*="twitter"], a[href*="instagram"], a[href*="linkedin"], a[href*="youtube"]'))
+          .map(link => (link as HTMLAnchorElement).href);
+
+        return {
+          title,
+          metaDescription,
+          textLength: textContent.length,
+          technologies,
+          forms,
+          socialLinks,
+          hasContactForm: forms.some(form => 
+            form.action.includes('contact') || 
+            Array.from(document.querySelectorAll('input')).some(input => 
+              input.type === 'email' || input.name.includes('email')
+            )
+          )
+        };
+      });
+
+      await browser.close();
+
+      // Simple analysis
+      const analysis = {
+        url,
+        title: websiteData.title,
+        description: websiteData.metaDescription,
+        technologies: websiteData.technologies,
+        hasContactForm: websiteData.hasContactForm,
+        socialMediaPresence: websiteData.socialLinks.length > 0,
+        contentLength: websiteData.textLength,
+        leadQuality: calculateLeadQuality(websiteData)
+      };
+
+      return NextResponse.json(analysis);
+
+    } catch (pageError) {
+      await browser.close();
+      console.error('Page navigation error:', pageError);
+      return NextResponse.json(
+        { error: 'Failed to analyze website' },
+        { status: 500 }
+      );
+    }
+
   } catch (error) {
-    console.error('Error fetching PageSpeed Insights:', error);
-    return null;
+    console.error('Website analysis error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
-export async function POST(request: NextRequest) {
-  const { url, userId } = await request.json();
+function calculateLeadQuality(data: WebsiteData): number {
+  let score = 50; // Base score
 
-  if (!url) {
-    return NextResponse.json({ error: 'URL is required' }, { status: 400 });
-  }
-
-  // Simplified premium check
-  if (!userId) {
-    return NextResponse.json({ error: 'Authentication is required for this feature.' }, { status: 401 });
-  }
-
-  // Check cache first
-  const cached = analysisCache.get(url);
-  if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION_MS) {
-    return NextResponse.json(cached.data);
-  }
-
-  const wappalyzer = new Wappalyzer(options);
-
-  try {
-    await wappalyzer.init();
-
-    const site = await wappalyzer.open(url);
-    const techAnalysis = await site.analyze();
-    
-    const pageSpeedData = await getPageSpeedInsights(url);
-
-    const result = {
-      technologies: techAnalysis.technologies,
-      performance: pageSpeedData
-    };
-
-    // Cache the result
-    analysisCache.set(url, { data: result, timestamp: Date.now() });
-
-    return NextResponse.json(result);
-  } catch (error) {
-    console.error('Analysis error:', error);
-    return NextResponse.json({ error: 'Failed to analyze website.' }, { status: 500 });
-  } finally {
-    await wappalyzer.destroy();
-  }
+  // Has contact form
+  if (data.hasContactForm) score += 20;
+  
+  // Has social media presence
+  if (data.socialLinks.length > 0) score += 10;
+  
+  // Content quality (basic check)
+  if (data.textLength > 1000) score += 10;
+  if (data.textLength > 3000) score += 5;
+  
+  // Modern technologies
+  if (data.technologies.length > 0) score += 5;
+  
+  return Math.min(100, Math.max(0, score));
 } 

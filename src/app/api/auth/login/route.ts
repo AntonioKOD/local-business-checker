@@ -28,23 +28,15 @@ export async function POST(request: Request) {
     }
 
     // Attempt login
-    try {
-      const result = await payload.login({
-        collection: 'users',
-        data: {
-          email: email.toLowerCase(),
-          password,
-        },
-      });
+    const result = await payload.login({
+      collection: 'users',
+      data: {
+        email: email.toLowerCase(),
+        password,
+      },
+    });
 
-      return NextResponse.json(result);
-    } catch (loginError) {
-      // Don't expose specific error messages for security
-      return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401 }
-      );
-    }
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json(

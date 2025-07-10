@@ -3,15 +3,34 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { GripVertical } from 'lucide-react';
+
 // Define Lead interface locally since payload types are not available
+interface BusinessData {
+  name: string;
+  address: string;
+  phone?: string;
+  website?: string;
+  rating: number;
+  review_count: number;
+}
+
 interface Lead {
   id: string;
   businessName: string;
-  status: string;
-  leadScore?: number;
-  businessData?: Record<string, unknown>;
+  placeId: string;
+  status: 'new' | 'contacted' | 'discussion' | 'proposal' | 'won' | 'lost';
+  leadScore: number;
+  businessData: BusinessData;
+  contactedDate?: string;
+  notes?: string;
+  isWatched?: boolean;
+  lastScanned?: string;
+  owner: {
+    id: string;
+    [key: string]: unknown;
+  };
 }
-import { GripVertical } from 'lucide-react';
 
 interface SortableItemProps {
   id: string;
@@ -48,7 +67,7 @@ export function SortableItem({ id, lead, onSelect }: SortableItemProps) {
       <div className="flex items-start justify-between">
         <div className="flex-grow">
           <p className="font-semibold text-gray-900 text-sm">{lead.businessName}</p>
-          <p className="text-xs text-gray-500">{lead.businessData?.address || 'Address not available'}</p>
+          <p className="text-xs text-gray-500">{lead.businessData.address || 'Address not available'}</p>
         </div>
         <div {...attributes} {...listeners} className="p-1 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600">
           <GripVertical size={16} />

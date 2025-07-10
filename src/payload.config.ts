@@ -6,7 +6,6 @@ import { buildConfig } from 'payload'
 import sharp from 'sharp'
 import { slateEditor } from '@payloadcms/richtext-slate'
 
-
 import { Users } from './collections/Users'
 import { Searches } from './collections/Searches'
 import { Leads } from './collections/Leads'
@@ -26,7 +25,7 @@ export default buildConfig({
     outputFile: path.resolve(__dirname, 'payload-types.ts'),
   },
   db: mongooseAdapter({
-    url: process.env.DATABASE_URI as string,
+    url: process.env.DATABASE_URI || 'mongodb://localhost:27017/business-checker',
   }),
   sharp,
   serverURL: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',

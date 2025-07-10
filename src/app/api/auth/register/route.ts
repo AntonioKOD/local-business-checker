@@ -2,6 +2,15 @@ import { NextResponse } from 'next/server';
 import { rateLimitMiddleware, rateLimitConfigs } from '@/lib/rate-limit';
 import payload from 'payload';
 
+interface CreateUserData {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  roles?: string[];
+  subscriptionStatus?: string;
+}
+
 export async function POST(request: Request) {
   try {
     // Apply rate limiting
@@ -54,16 +63,18 @@ export async function POST(request: Request) {
     }
 
     // Create user
-    const user = await payload.create({
+    const userData: CreateUserData = {
+      email: email.toLowerCase(),
+      password,
+      firstName,
+      lastName,
+      roles: ['user'],
+      subscriptionStatus: 'free'
+    };
+
+    await payload.create({
       collection: 'users',
-      data: {
-        email: email.toLowerCase(),
-        password,
-        firstName,
-        lastName,
-        roles: ['user'],
-        subscriptionStatus: 'free'
-      },
+      data: userData,
     });
 
     // Log the user in

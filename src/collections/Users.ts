@@ -28,11 +28,12 @@ export const Users: CollectionConfig = {
       name: 'subscriptionStatus',
       type: 'select',
       options: [
+        { label: 'Free', value: 'free' },
         { label: 'Active', value: 'active' },
         { label: 'Cancelled', value: 'cancelled' },
         { label: 'Past Due', value: 'past_due' },
       ],
-      defaultValue: 'active',
+      defaultValue: 'free',
     },
     {
       name: 'stripeCustomerId',
