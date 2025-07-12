@@ -388,6 +388,9 @@ export default function ClientCompass() {
                     <Crown className="w-5 h-5 text-yellow-600" />
                     <h3 className="text-lg font-bold text-gray-900">Premium Search Options</h3>
                   </div>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Premium users get up to 100 searches per day and can analyze up to 50 businesses per search.
+                  </p>
                   
                   <div className="grid md:grid-cols-3 gap-6">
                     <div className="group">
@@ -403,8 +406,7 @@ export default function ClientCompass() {
                         <option value={10}>10 businesses</option>
                         <option value={20}>20 businesses</option>
                         <option value={30}>30 businesses</option>
-                        <option value={50}>50 businesses</option>
-                        <option value={100}>100 businesses</option>
+                        <option value={50}>50 businesses (max)</option>
                       </select>
                     </div>
                     
@@ -558,7 +560,7 @@ export default function ClientCompass() {
                           onClick={() => window.location.href = '/'}
                           className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-md transform hover:scale-105 transition-all duration-200"
                         >
-                          Upgrade - ${results.payment_info.upgrade_price}
+                          Upgrade - $7
                         </button>
                       )}
                     </div>

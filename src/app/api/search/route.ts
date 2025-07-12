@@ -3,32 +3,42 @@ import { ClientCompass, SearchResults } from '@/lib/business-checker';
 
 // Track anonymous user searches by IP
 const anonymousSearchCounts = new Map<string, { count: number; lastReset: number; lastRequest: number }>();
+// Track premium user searches by user ID
+const premiumUserSearchCounts = new Map<string, { count: number; lastReset: number; lastRequest: number }>();
 const SEARCH_LIMIT_RESET_HOURS = 24;
 const MIN_REQUEST_INTERVAL_MS = 2000; // Minimum 2 seconds between requests
+const PREMIUM_DAILY_SEARCH_LIMIT = 100; // Premium users get 100 searches per day
 
 // Simple cache to prevent duplicate expensive API calls
 const searchCache = new Map<string, { results: SearchResults; timestamp: number }>();
 const CACHE_DURATION_MS = 10 * 60 * 1000; // 10 minutes cache
 
-// Cleanup old entries every hour to prevent memory leaks
-setInterval(() => {
-  const now = Date.now();
-  const cutoff = now - (SEARCH_LIMIT_RESET_HOURS * 60 * 60 * 1000);
-  
-  // Cleanup anonymous search tracking
-  for (const [ip, data] of anonymousSearchCounts.entries()) {
-    if (data.lastReset < cutoff) {
-      anonymousSearchCounts.delete(ip);
+  // Cleanup old entries every hour to prevent memory leaks
+  setInterval(() => {
+    const now = Date.now();
+    const cutoff = now - (SEARCH_LIMIT_RESET_HOURS * 60 * 60 * 1000);
+    
+    // Cleanup anonymous search tracking
+    for (const [ip, data] of anonymousSearchCounts.entries()) {
+      if (data.lastReset < cutoff) {
+        anonymousSearchCounts.delete(ip);
+      }
     }
-  }
-  
-  // Cleanup search cache
-  for (const [key, data] of searchCache.entries()) {
-    if ((now - data.timestamp) > CACHE_DURATION_MS) {
-      searchCache.delete(key);
+    
+    // Cleanup premium user search tracking
+    for (const [userId, data] of premiumUserSearchCounts.entries()) {
+      if (data.lastReset < cutoff) {
+        premiumUserSearchCounts.delete(userId);
+      }
     }
-  }
-}, 60 * 60 * 1000); // Run every hour
+    
+    // Cleanup search cache
+    for (const [key, data] of searchCache.entries()) {
+      if ((now - data.timestamp) > CACHE_DURATION_MS) {
+        searchCache.delete(key);
+      }
+    }
+  }, 60 * 60 * 1000); // Run every hour
 
 export async function POST(request: NextRequest) {
   try {
@@ -48,6 +58,27 @@ export async function POST(request: NextRequest) {
       // For now, assume any authenticated user is subscribed
       // This can be enhanced later with proper subscription checking
       isSubscribed = true;
+      
+      // Check premium user search limits
+      const now = Date.now();
+      const userData = premiumUserSearchCounts.get(userId);
+      
+      if (userData) {
+        // Reset count if 24 hours have passed
+        const hoursElapsed = (now - userData.lastReset) / (1000 * 60 * 60);
+        if (hoursElapsed >= SEARCH_LIMIT_RESET_HOURS) {
+          premiumUserSearchCounts.set(userId, { count: 0, lastReset: now, lastRequest: now });
+        } else if (userData.count >= PREMIUM_DAILY_SEARCH_LIMIT) {
+          return NextResponse.json({
+            error: 'Daily search limit reached',
+            message: `You have reached your daily limit of ${PREMIUM_DAILY_SEARCH_LIMIT} searches. Please try again tomorrow.`,
+            searchesRemaining: 0
+          }, { status: 429 });
+        }
+      } else {
+        // First search from this user
+        premiumUserSearchCounts.set(userId, { count: 0, lastReset: now, lastRequest: now });
+      }
     }
 
     // Handle anonymous user search limits
@@ -86,7 +117,7 @@ export async function POST(request: NextRequest) {
         error: 'Search limit exceeded',
         message: 'You have reached the limit of 1 free search. Subscribe to get unlimited searches.',
         requiresSubscription: true,
-        upgradePrice: 20.00
+        upgradePrice: 7.00
       }, { status: 403 });
     }
 
@@ -119,17 +150,25 @@ export async function POST(request: NextRequest) {
       results = results.filter(business => !business.website || business.website === 'N/A');
     }
 
-    // Limit results: 20 max total, 20 for subscribed users, 1 for free users
-    const maxBusinesses = isSubscribed ? 20 : 1;
+    // Limit results: 50 max total, 50 for subscribed users, 1 for free users
+    const maxBusinesses = isSubscribed ? 50 : 1;
     const limitedResults = results.slice(0, maxBusinesses);
     const remainingCount = isSubscribed ? 0 : Math.max(0, results.length - 1);
 
-    // Update search count for anonymous users
+    // Update search count for users
     if (!isSubscribed) {
       const ipData = anonymousSearchCounts.get(userIP)!;
       anonymousSearchCounts.set(userIP, { 
         ...ipData, 
         count: ipData.count + 1,
+        lastRequest: Date.now()
+      });
+    } else {
+      // Update premium user search count
+      const userData = premiumUserSearchCounts.get(userId)!;
+      premiumUserSearchCounts.set(userId, { 
+        ...userData, 
+        count: userData.count + 1,
         lastRequest: Date.now()
       });
     }
@@ -172,8 +211,10 @@ export async function POST(request: NextRequest) {
         total_found: results.length,
         showing: limitedResults.length,
         remaining: remainingCount,
-        upgrade_price: 20.00,
-        searches_remaining: isSubscribed ? null : Math.max(0, 1 - (anonymousSearchCounts.get(userIP)?.count || 0))
+        upgrade_price: 7.00,
+        searches_remaining: isSubscribed ? 
+          Math.max(0, PREMIUM_DAILY_SEARCH_LIMIT - (premiumUserSearchCounts.get(userId)?.count || 0)) : 
+          Math.max(0, 1 - (anonymousSearchCounts.get(userIP)?.count || 0))
       }
     };
 

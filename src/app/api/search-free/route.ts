@@ -174,8 +174,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Limit results: 20 max total, 20 for subscribed users, 1 for free users
-    const maxBusinesses = isSubscribed ? 20 : 1;
+    // Limit results: 50 max total, 50 for subscribed users, 1 for free users
+    const maxBusinesses = isSubscribed ? 50 : 1;
     const limitedResults = results.slice(0, maxBusinesses);
     const remainingCount = isSubscribed ? 0 : Math.max(0, results.length - 1);
 
@@ -230,7 +230,7 @@ export async function POST(request: NextRequest) {
         total_found: results.length,
         showing: limitedResults.length,
         remaining: remainingCount,
-        upgrade_price: 20.00,
+        upgrade_price: 7.00,
         searches_remaining: isSubscribed ? null : Math.max(0, 1 - (anonymousSearchCounts.get(userIP)?.count || 0))
       }
     };
