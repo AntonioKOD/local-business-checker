@@ -4,24 +4,22 @@ import React, { useState, useEffect } from 'react';
 import CRMDashboard from '@/components/CRMDashboard';
 
 export default function CRMPage() {
-  const [currentUser, setCurrentUser] = useState<{ id: string; email: string; firstName: string; lastName: string; subscriptionStatus?: string } | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  // Check authentication status on mount
+  // Wait for the main layout to finish its authentication check
   useEffect(() => {
-    const checkAuthStatus = async () => {
+    const waitForAuth = async () => {
       try {
-        console.log('Checking authentication status...');
-        const response = await fetch('/api/auth/verify-token');
-        console.log('Auth response status:', response.status);
+        // Wait for the main layout to finish its auth check
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
-        if (response.ok) {
-          const data = await response.json();
-          console.log('Auth successful, user:', data.user);
-          setCurrentUser(data.user);
-        } else {
-          console.log('Auth failed, showing error');
+        // Check if we can get the user from the main layout
+        const response = await fetch('/api/auth/verify-token', {
+          credentials: 'include',
+        });
+        
+        if (!response.ok) {
           setAuthError('Authentication required');
         }
       } catch (error) {
@@ -32,7 +30,7 @@ export default function CRMPage() {
       }
     };
 
-    checkAuthStatus();
+    waitForAuth();
   }, []);
 
   // Show loading while checking authentication
@@ -48,7 +46,7 @@ export default function CRMPage() {
   }
 
   // If not authenticated, show error message instead of redirecting
-  if (!currentUser) {
+  if (authError) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-8">
@@ -72,13 +70,7 @@ export default function CRMPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
-        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <h2 className="text-lg font-semibold text-blue-800 mb-2">Debug Info</h2>
-          <p className="text-sm text-blue-700">User ID: {currentUser?.id}</p>
-          <p className="text-sm text-blue-700">Email: {currentUser?.email}</p>
-          <p className="text-sm text-blue-700">Name: {currentUser?.firstName} {currentUser?.lastName}</p>
-        </div>
-        <CRMDashboard currentUser={currentUser} />
+        <CRMDashboard />
       </div>
     </div>
   );

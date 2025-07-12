@@ -27,10 +27,8 @@ interface Funnel {
 
 export default function FunnelsPage() {
   const [currentUser, setCurrentUser] = useState<{ id: string; email: string; firstName: string; lastName: string; subscriptionStatus?: string } | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
   const [funnels, setFunnels] = useState<Funnel[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [updatingFunnel, setUpdatingFunnel] = useState<string | null>(null);
 
   const fetchFunnels = useCallback(async () => {
@@ -41,33 +39,30 @@ export default function FunnelsPage() {
         const data = await response.json();
         setFunnels(data.funnels || []);
       } else {
-        setError('Failed to fetch funnels');
+        // setError('Failed to fetch funnels'); // This line was removed as per the edit hint
       }
     } catch (error) {
       console.error('Error fetching funnels:', error);
-      setError('Failed to fetch funnels');
+      // setError('Failed to fetch funnels'); // This line was removed as per the edit hint
     } finally {
       setLoading(false);
     }
   }, [currentUser?.id]);
 
-  // Check authentication status on mount
+  // Check authentication status on mount (optional)
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
-        const response = await fetch('/api/auth/verify-token');
+        const response = await fetch('/api/auth/verify-token', {
+          credentials: 'include',
+        });
+        
         if (response.ok) {
           const data = await response.json();
           setCurrentUser(data.user);
-        } else {
-          // Redirect to home if not authenticated
-          window.location.href = '/';
         }
       } catch (error) {
-        console.error('Auth check failed:', error);
-        window.location.href = '/';
-      } finally {
-        setAuthLoading(false);
+        // Do nothing, just means not logged in
       }
     };
 
@@ -94,11 +89,11 @@ export default function FunnelsPage() {
       if (response.ok) {
         setFunnels(prev => prev.filter(funnel => funnel.id !== funnelId));
       } else {
-        setError('Failed to delete funnel');
+        // setError('Failed to delete funnel'); // This line was removed as per the edit hint
       }
     } catch (error) {
       console.error('Error deleting funnel:', error);
-      setError('Failed to delete funnel');
+      // setError('Failed to delete funnel'); // This line was removed as per the edit hint
     }
   };
 
@@ -124,11 +119,11 @@ export default function FunnelsPage() {
         const data = await response.json();
         setFunnels(prev => [data.funnel, ...prev]);
       } else {
-        setError('Failed to duplicate funnel');
+        // setError('Failed to duplicate funnel'); // This line was removed as per the edit hint
       }
     } catch (error) {
       console.error('Error duplicating funnel:', error);
-      setError('Failed to duplicate funnel');
+      // setError('Failed to duplicate funnel'); // This line was removed as per the edit hint
     }
   };
 
@@ -151,11 +146,11 @@ export default function FunnelsPage() {
           f.id === funnel.id ? { ...f, isPublished: !f.isPublished } : f
         ));
       } else {
-        setError('Failed to update funnel');
+        // setError('Failed to update funnel'); // This line was removed as per the edit hint
       }
     } catch (error) {
       console.error('Error updating funnel:', error);
-      setError('Failed to update funnel');
+      // setError('Failed to update funnel'); // This line was removed as per the edit hint
     } finally {
       setUpdatingFunnel(null);
     }
@@ -184,25 +179,66 @@ export default function FunnelsPage() {
     };
   };
 
-  // Show loading while checking authentication
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // If not authenticated, show loading (will redirect)
+  // If not authenticated, show the page with a message
   if (!currentUser) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Redirecting...</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
+          <div className="space-y-8">
+            {/* Header */}
+            <div className="bg-white rounded-2xl shadow-lg p-8">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900 mb-2">Lead Funnels</h1>
+                  <p className="text-gray-600">
+                    Create and manage high-converting lead capture funnels
+                  </p>
+                </div>
+                <div className="mt-4 md:mt-0">
+                  <Link
+                    href="/funnel-builder"
+                    className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl transform hover:scale-105"
+                  >
+                    <Plus className="w-5 h-5 mr-2" />
+                    Create New Funnel
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Not Authenticated Message */}
+            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm font-bold">!</span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-yellow-800">Please Log In</h3>
+                  <p className="text-yellow-700">
+                    You need to be logged in to view and manage your funnels. Please log in to continue.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Empty State */}
+            <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
+              <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Briefcase className="w-12 h-12 text-gray-400" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">No Funnels Yet</h3>
+              <p className="text-gray-600 mb-8 max-w-md mx-auto">
+                Create your first lead funnel to start capturing leads and growing your business.
+              </p>
+              <Link
+                href="/funnel-builder"
+                className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl transform hover:scale-105"
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                Create Your First Funnel
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -234,7 +270,7 @@ export default function FunnelsPage() {
           </div>
 
           {/* Error Display */}
-          {error && (
+          {/* {error && ( // This block was removed as per the edit hint
             <div className="bg-red-50 border border-red-200 rounded-xl p-4">
               <div className="flex items-center space-x-2">
                 <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
@@ -243,7 +279,7 @@ export default function FunnelsPage() {
                 <p className="text-red-800 font-medium">{error}</p>
               </div>
             </div>
-          )}
+          )} */}
 
           {/* Loading State */}
           {loading && (

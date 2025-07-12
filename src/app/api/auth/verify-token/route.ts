@@ -10,7 +10,6 @@ export async function GET(request: NextRequest) {
                   request.headers.get('authorization')?.replace('Bearer ', '');
 
     if (!token) {
-      console.log('No token provided in request');
       return NextResponse.json(
         { error: 'No token provided' },
         { status: 401 }
@@ -26,7 +25,6 @@ export async function GET(request: NextRequest) {
       });
 
       if (!me.user) {
-        console.log('Invalid token - no user found');
         return NextResponse.json(
           { error: 'Invalid token' },
           { status: 401 }

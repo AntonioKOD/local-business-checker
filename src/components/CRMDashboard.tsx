@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Users, 
@@ -64,7 +64,8 @@ interface CRMStats {
   conversionRate: number;
 }
 
-const CRMDashboard = ({ currentUser }: { currentUser: { id: string; email: string; firstName: string; lastName: string } | null }) => {
+const CRMDashboard = () => {
+  const [currentUser, setCurrentUser] = useState<{ id: string; email: string; firstName: string; lastName: string } | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -89,37 +90,42 @@ const CRMDashboard = ({ currentUser }: { currentUser: { id: string; email: strin
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState<'client' | 'contact'>('client');
   const [modalLoading, setModalLoading] = useState(false);
+  const isFetchingRef = useRef(false);
 
-  const calculateStats = useCallback((leads: any[]) => {
+  const calculateStats = (clientsData: Client[], contactsData: Contact[], activitiesData: Activity[], leads: any[]) => {
     const now = new Date();
     const thisMonth = now.getMonth();
     const thisYear = now.getFullYear();
 
-    const newThisMonth = clients.filter(client => {
+    const newThisMonth = clientsData.filter(client => {
       const clientDate = new Date(client.lastContact);
       return clientDate.getMonth() === thisMonth && clientDate.getFullYear() === thisYear;
     }).length;
 
-    const activeClients = clients.filter(client => client.status !== 'inactive').length;
-    const customers = clients.filter(client => client.status === 'customer').length;
-    const conversionRate = clients.length > 0 ? (customers / clients.length) * 100 : 0;
+    const activeClients = clientsData.filter(client => client.status !== 'inactive').length;
+    const customers = clientsData.filter(client => client.status === 'customer').length;
+    const conversionRate = clientsData.length > 0 ? (customers / clientsData.length) * 100 : 0;
 
     setStats({
-      totalClients: clients.length,
-      totalContacts: contacts.length,
-      totalActivities: activities.length,
+      totalClients: clientsData.length,
+      totalContacts: contactsData.length,
+      totalActivities: activitiesData.length,
       totalLeads: leads.length,
       activeClients,
       newThisMonth,
       totalRevenue: '$0', // Would calculate from deals/opportunities
       conversionRate: Math.round(conversionRate),
     });
-  }, [clients, contacts, activities]);
+  };
 
   const fetchCRMData = useCallback(async () => {
+    if (isFetchingRef.current) {
+      return;
+    }
+    
     try {
+      isFetchingRef.current = true;
       setLoading(true);
-      console.log('Fetching CRM data for user:', currentUser?.id);
       
       // Fetch all CRM data
       const [clientsRes, contactsRes, activitiesRes, leadsRes] = await Promise.all([
@@ -128,13 +134,6 @@ const CRMDashboard = ({ currentUser }: { currentUser: { id: string; email: strin
         fetch('/api/crm/activities'),
         fetch(`/api/crm/leads?userId=${currentUser?.id}`),
       ]);
-
-      console.log('CRM API responses:', {
-        clients: clientsRes.status,
-        contacts: contactsRes.status,
-        activities: activitiesRes.status,
-        leads: leadsRes.status,
-      });
 
       if (clientsRes.ok) {
         const clientsData = await clientsRes.json();
@@ -160,7 +159,14 @@ const CRMDashboard = ({ currentUser }: { currentUser: { id: string; email: strin
       if (leadsRes.ok) {
         const leadsData = await leadsRes.json();
         setLeads(leadsData.leads || []);
-        calculateStats(leadsData.leads || []);
+        
+        // Get all the data we've fetched so far
+        const clientsData = clientsRes.ok ? (await clientsRes.json()).clients || [] : [];
+        const contactsData = contactsRes.ok ? (await contactsRes.json()).contacts || [] : [];
+        const activitiesData = activitiesRes.ok ? (await activitiesRes.json()).activities || [] : [];
+        const leadsArray = leadsData.leads || [];
+        
+        calculateStats(clientsData, contactsData, activitiesData, leadsArray);
       } else {
         console.error('Failed to fetch leads:', leadsRes.status);
       }
@@ -169,17 +175,40 @@ const CRMDashboard = ({ currentUser }: { currentUser: { id: string; email: strin
       console.error('Error fetching CRM data:', error);
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
-  }, [currentUser?.id, calculateStats]);
+  }, [currentUser?.id]);
+
+  // Fetch current user on mount
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await fetch('/api/auth/verify-token', {
+          credentials: 'include',
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setCurrentUser(data.user);
+        } else {
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error fetching current user:', error);
+        setLoading(false);
+      }
+    };
+
+    fetchCurrentUser();
+  }, []);
 
   useEffect(() => {
-    if (currentUser?.id) {
+    if (currentUser?.id && !isFetchingRef.current) {
       fetchCRMData();
-    } else {
-      console.log('No current user, skipping CRM data fetch');
+    } else if (!currentUser?.id) {
       setLoading(false);
     }
-  }, [currentUser, fetchCRMData]);
+  }, [currentUser?.id, fetchCRMData]);
 
   const handleHubSpotImport = async (apiKey: string, importType: string) => {
     try {

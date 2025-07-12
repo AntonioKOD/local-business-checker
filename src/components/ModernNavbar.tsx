@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import Image from 'next/image';
 import { 
   Search, 
   LogOut, 
@@ -12,7 +13,6 @@ import {
   Menu, 
   X,
   Briefcase,
-  Sparkles,
   Zap,
   Users
 } from 'lucide-react';
@@ -105,11 +105,15 @@ export default function ModernNavbar({
             {/* Logo */}
             <Link href="/" className="flex items-center space-x-3 group relative z-10">
               <div className="relative">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500/90 to-indigo-600/90 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-2xl group-hover:shadow-blue-500/25 transition-all duration-300 group-hover:scale-110 border border-white/20">
-                  <Sparkles className="w-6 h-6 text-white" />
+                <div className="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-2xl group-hover:shadow-blue-500/25 transition-all duration-300 group-hover:scale-110 border border-white/20 overflow-hidden">
+                  <Image 
+                    src="/Client_Compass.png" 
+                    alt="Client Compass Logo" 
+                    width={40} 
+                    height={40}
+                    className="object-contain"
+                  />
                 </div>
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full animate-pulse shadow-lg"></div>
-                <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full animate-pulse shadow-lg"></div>
               </div>
               <div className="flex flex-col">
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent drop-shadow-lg">
