@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ClientCompass, SearchResults } from '@/lib/business-checker';
-import { getPayload } from 'payload';
-import config from '@/payload.config';
 
 // Track anonymous user searches by IP
 const anonymousSearchCounts = new Map<string, { count: number; lastReset: number; lastRequest: number }>();
@@ -47,19 +45,9 @@ export async function POST(request: NextRequest) {
     let isSubscribed = false;
     
     if (userId) {
-      try {
-        const payload = await getPayload({ config });
-        const userResult = await payload.findByID({
-          collection: 'users',
-          id: userId,
-        });
-        
-        if (userResult && (userResult as { subscriptionStatus?: string }).subscriptionStatus === 'active') {
-          isSubscribed = true;
-        }
-      } catch (error) {
-        console.error('Error checking user subscription:', error);
-      }
+      // For now, assume any authenticated user is subscribed
+      // This can be enhanced later with proper subscription checking
+      isSubscribed = true;
     }
 
     // Handle anonymous user search limits
@@ -146,29 +134,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Log search to database
-    try {
-      const payload = await getPayload({ config });
-      await (payload as { create: (options: { collection: string; data: Record<string, unknown> }) => Promise<unknown> }).create({
-        collection: 'searches',
-        data: {
-          query,
-          location,
-          user: userId || null,
-          isAnonymous: !userId,
-          ipAddress: userIP,
-          results: JSON.stringify(results),
-          businessesFound: results.length,
-          websitesFound: results.filter(b => b.website && b.website !== 'N/A').length,
-          accessibleWebsites: results.filter(b => b.website_status?.accessible).length,
-          searchDate: new Date(),
-          searchMethod: 'gmaps_extractor', // Track that this used GMaps Extractor API
-        },
-      });
-      console.log('Search logged successfully');
-    } catch (error) {
-      console.error('Error logging search:', error);
-    }
+    // Search logging is now disabled to reduce database costs
+    // Users can export their search results if needed
 
     // Calculate statistics based on ALL results found (but show limited results)
     const businessesWithWebsites = results.filter(b => b.website && b.website !== 'N/A').length;

@@ -19,15 +19,6 @@ const CRMModal = ({ isOpen, onClose, type, onSave, loading = false }: CRMModalPr
     industry: 'technology',
     website: '',
     phone: '',
-    address: {
-      street: '',
-      city: '',
-      state: '',
-      zipCode: '',
-      country: 'United States',
-    },
-    companySize: '1-10',
-    annualRevenue: 'under-1m',
     status: 'prospect',
     source: 'website',
     notes: '',
@@ -36,13 +27,7 @@ const CRMModal = ({ isOpen, onClose, type, onSave, loading = false }: CRMModalPr
     fullName: '',
     email: '',
     title: '',
-    department: '',
     role: 'decision-maker',
-    preferences: {
-      preferredContactMethod: 'email',
-      timezone: '',
-      bestTimeToContact: '',
-    },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -51,21 +36,10 @@ const CRMModal = ({ isOpen, onClose, type, onSave, loading = false }: CRMModalPr
   };
 
   const handleInputChange = (field: string, value: any) => {
-    if (field.includes('.')) {
-      const [parent, child] = field.split('.');
-      setFormData(prev => ({
-        ...prev,
-        [parent]: {
-          ...(prev[parent as keyof typeof prev] as Record<string, any>),
-          [child]: value,
-        },
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [field]: value,
-      }));
-    }
+    setFormData(prev => ({
+      ...prev,
+      [field]: value,
+    }));
   };
 
   if (!isOpen) return null;
@@ -160,41 +134,6 @@ const CRMModal = ({ isOpen, onClose, type, onSave, loading = false }: CRMModalPr
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Company Size
-                  </label>
-                  <select
-                    value={formData.companySize}
-                    onChange={(e) => handleInputChange('companySize', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="1-10">1-10 employees</option>
-                    <option value="11-50">11-50 employees</option>
-                    <option value="51-200">51-200 employees</option>
-                    <option value="201-500">201-500 employees</option>
-                    <option value="500+">500+ employees</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Annual Revenue
-                  </label>
-                  <select
-                    value={formData.annualRevenue}
-                    onChange={(e) => handleInputChange('annualRevenue', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="under-1m">Under $1M</option>
-                    <option value="1m-10m">$1M - $10M</option>
-                    <option value="10m-50m">$10M - $50M</option>
-                    <option value="50m-100m">$50M - $100M</option>
-                    <option value="100m-plus">$100M+</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Status
                   </label>
                   <select
@@ -223,44 +162,9 @@ const CRMModal = ({ isOpen, onClose, type, onSave, loading = false }: CRMModalPr
                     <option value="cold-outreach">Cold Outreach</option>
                     <option value="trade-show">Trade Show</option>
                     <option value="social-media">Social Media</option>
+                    <option value="hubspot-import">HubSpot Import</option>
                     <option value="other">Other</option>
                   </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Address
-                </label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <input
-                    type="text"
-                    placeholder="Street Address"
-                    value={formData.address.street}
-                    onChange={(e) => handleInputChange('address.street', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  <input
-                    type="text"
-                    placeholder="City"
-                    value={formData.address.city}
-                    onChange={(e) => handleInputChange('address.city', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  <input
-                    type="text"
-                    placeholder="State"
-                    value={formData.address.state}
-                    onChange={(e) => handleInputChange('address.state', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  <input
-                    type="text"
-                    placeholder="ZIP Code"
-                    value={formData.address.zipCode}
-                    onChange={(e) => handleInputChange('address.zipCode', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
                 </div>
               </div>
 
@@ -309,37 +213,12 @@ const CRMModal = ({ isOpen, onClose, type, onSave, loading = false }: CRMModalPr
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone
-                  </label>
-                  <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Title
                   </label>
                   <input
                     type="text"
                     value={formData.title}
                     onChange={(e) => handleInputChange('title', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Department
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.department}
-                    onChange={(e) => handleInputChange('department', e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
@@ -361,59 +240,6 @@ const CRMModal = ({ isOpen, onClose, type, onSave, loading = false }: CRMModalPr
                   </select>
                 </div>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Contact Preferences
-                </label>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1">Preferred Method</label>
-                    <select
-                      value={formData.preferences.preferredContactMethod}
-                      onChange={(e) => handleInputChange('preferences.preferredContactMethod', e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="email">Email</option>
-                      <option value="phone">Phone</option>
-                      <option value="linkedin">LinkedIn</option>
-                      <option value="in-person">In Person</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1">Timezone</label>
-                    <input
-                      type="text"
-                      placeholder="EST, PST, etc."
-                      value={formData.preferences.timezone}
-                      onChange={(e) => handleInputChange('preferences.timezone', e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1">Best Time</label>
-                    <input
-                      type="text"
-                      placeholder="9 AM - 5 PM"
-                      value={formData.preferences.bestTimeToContact}
-                      onChange={(e) => handleInputChange('preferences.bestTimeToContact', e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Notes
-                </label>
-                <textarea
-                  value={formData.notes}
-                  onChange={(e) => handleInputChange('notes', e.target.value)}
-                  rows={3}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
             </>
           )}
 
@@ -428,7 +254,7 @@ const CRMModal = ({ isOpen, onClose, type, onSave, loading = false }: CRMModalPr
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center space-x-2"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors flex items-center space-x-2"
             >
               <Save className="w-4 h-4" />
               <span>{loading ? 'Saving...' : 'Save'}</span>

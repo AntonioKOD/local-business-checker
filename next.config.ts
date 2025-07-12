@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
   
   // Environment variables
   env: {
-    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || 'https://buildquick.io',
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
   },
 
   // Security headers
@@ -40,7 +40,7 @@ const nextConfig: NextConfig = {
 
   // Image optimization
   images: {
-    domains: ['buildquick.io'],
+          domains: ['localhost'],
     formats: ['image/webp', 'image/avif'],
   },
 

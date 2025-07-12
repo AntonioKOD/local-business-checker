@@ -1,8 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { FreeClientCompass, SearchFilters } from '@/lib/business-checker-free';
-import { getPayload } from 'payload';
-import config from '@/payload.config';
 
 // Base SearchResults interface
 interface BaseSearchResults {
@@ -191,29 +189,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Log search to database
-    try {
-      const payload = await getPayload({ config });
-      await (payload as { create: (options: { collection: string; data: Record<string, unknown> }) => Promise<unknown> }).create({
-        collection: 'searches',
-        data: {
-          query,
-          location,
-          user: userId || null,
-          isAnonymous: !userId,
-          ipAddress: userIP,
-          results: JSON.stringify(results),
-          businessesFound: results.length,
-          websitesFound: results.filter(b => b.website && b.website !== 'N/A').length,
-          accessibleWebsites: results.filter(b => b.website_status?.accessible).length,
-          searchDate: new Date(),
-          searchMethod: 'free_apis', // Track that this used free APIs
-        },
-      });
-      console.log('Search logged successfully');
-    } catch (error) {
-      console.error('Error logging search:', error);
-    }
+    // Search logging is now disabled to reduce database costs
+    // Users can export their search results if needed
 
     // Calculate enhanced statistics based on ALL results found
     const businessesWithWebsites = results.filter(b => b.website && b.website !== 'N/A').length;

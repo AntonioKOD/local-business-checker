@@ -204,45 +204,42 @@ export default function ClientCompass() {
   };
 
   // CSV Export functionality
-  const exportToCSV = () => {
+  const exportToCSV = async () => {
     if (!results?.businesses || results.businesses.length === 0) {
       alert('No search results to export');
       return;
     }
 
-    const csvData = results.businesses.map(business => ({
-      Name: business.name,
-      Address: business.address,
-      Phone: business.phone || '',
-      Website: business.website || '',
-      Rating: business.rating,
-      'Total Ratings': business.total_ratings || '',
-      'Website Status': business.website_status?.accessible ? 'Accessible' : 'Inaccessible',
-      'Lead Score': business.lead_score || '',
-      'Business Insights': business.business_insights?.recommended_services?.join(', ') || '',
-      'Digital Presence': business.business_insights?.digital_presence || '',
-      'Opportunity Score': business.business_insights?.opportunity_score || '',
-      Emails: Array.isArray(business.emails) ? business.emails.join(', ') : '',
-      'Social Media': business.social_media ? Object.values(business.social_media).flat().join(', ') : '',
-      'Place ID': business.place_id,
-      Latitude: business.location?.lat || '',
-      Longitude: business.location?.lng || ''
-    }));
+    try {
+      const response = await fetch('/api/export-search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          searchResults: results,
+          fileName: `business-search-results-${new Date().toISOString().split('T')[0]}`
+        }),
+      });
 
-    const csvContent = [
-      Object.keys(csvData[0]).join(','),
-      ...csvData.map(row => Object.values(row).map(value => `"${String(value).replace(/"/g, '""')}"`).join(','))
-    ].join('\n');
+      if (!response.ok) {
+        throw new Error('Export failed');
+      }
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `business-search-results-${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      // Create download link
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `business-search-results-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('Failed to export results. Please try again.');
+    }
   };
 
   const handleLogout = async () => {
@@ -330,7 +327,7 @@ export default function ClientCompass() {
             "@context": "https://schema.org",
             "@type": "WebApplication",
             "name": "Client Compass",
-            "url": "https://buildquick.io",
+            "url": "http://localhost:3000",
             "description": "Discover local businesses and get comprehensive website analysis.",
             "applicationCategory": "BusinessApplication",
             "operatingSystem": "Web",
@@ -517,7 +514,7 @@ export default function ClientCompass() {
                 </div>
 
                 {/* CSV Export Button */}
-                <div className="mt-6 flex justify-center">
+                <div className="mt-6 flex flex-col items-center space-y-3">
                   <button
                     onClick={exportToCSV}
                     className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium rounded-xl shadow-lg transform hover:scale-105 transition-all duration-200"
@@ -525,6 +522,10 @@ export default function ClientCompass() {
                     <Download className="w-5 h-5 mr-2" />
                     Export to CSV
                   </button>
+                  <p className="text-xs text-gray-500 text-center max-w-md">
+                    💾 Search results are not automatically saved to reduce database costs. 
+                    Export your results to keep them for future reference.
+                  </p>
                 </div>
 
                 {/* Payment Info */}

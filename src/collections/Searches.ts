@@ -7,6 +7,9 @@ export const Searches: CollectionConfig = {
     description: 'Track all business searches and analytics',
     defaultColumns: ['query', 'location', 'user', 'searchDate', 'businessesFound'],
   },
+  access: {
+    delete: () =>  true,
+  },
   fields: [
     {
       name: 'query',

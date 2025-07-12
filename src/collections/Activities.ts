@@ -65,27 +65,12 @@ export const Activities: CollectionConfig = {
       },
     },
     {
-      name: 'lead',
-      type: 'relationship',
-      relationTo: 'clientleads' as any,
-      admin: {
-        description: 'Associated lead (optional)',
-      },
-    },
-    {
       name: 'date',
       type: 'date',
       required: true,
       defaultValue: () => new Date().toISOString(),
       admin: {
         description: 'Date of the activity',
-      },
-    },
-    {
-      name: 'duration',
-      type: 'number',
-      admin: {
-        description: 'Duration in minutes',
       },
     },
     {
@@ -142,58 +127,6 @@ export const Activities: CollectionConfig = {
       type: 'text',
       admin: {
         description: 'Next action to take',
-      },
-    },
-    {
-      name: 'nextActionDate',
-      type: 'date',
-      admin: {
-        description: 'Date for next action',
-      },
-    },
-    {
-      name: 'tags',
-      type: 'select',
-      hasMany: true,
-      options: [
-        { label: 'Sales', value: 'sales' },
-        { label: 'Support', value: 'support' },
-        { label: 'Onboarding', value: 'onboarding' },
-        { label: 'Renewal', value: 'renewal' },
-        { label: 'Upsell', value: 'upsell' },
-        { label: 'Training', value: 'training' },
-      ],
-      admin: {
-        description: 'Tags for categorization',
-      },
-    },
-    {
-      name: 'attachments',
-      type: 'array',
-      fields: [
-        {
-          name: 'filename',
-          type: 'text',
-        },
-        {
-          name: 'url',
-          type: 'text',
-        },
-        {
-          name: 'type',
-          type: 'text',
-        },
-      ],
-      admin: {
-        description: 'Attachments related to this activity',
-      },
-    },
-    {
-      name: 'hubspotActivityId',
-      type: 'text',
-      admin: {
-        description: 'HubSpot activity ID (if synced from HubSpot)',
-        readOnly: true,
       },
     },
   ],

@@ -56,61 +56,6 @@ export const Clients: CollectionConfig = {
       },
     },
     {
-      name: 'address',
-      type: 'group',
-      fields: [
-        {
-          name: 'street',
-          type: 'text',
-        },
-        {
-          name: 'city',
-          type: 'text',
-        },
-        {
-          name: 'state',
-          type: 'text',
-        },
-        {
-          name: 'zipCode',
-          type: 'text',
-        },
-        {
-          name: 'country',
-          type: 'text',
-          defaultValue: 'United States',
-        },
-      ],
-    },
-    {
-      name: 'companySize',
-      type: 'select',
-      options: [
-        { label: '1-10 employees', value: '1-10' },
-        { label: '11-50 employees', value: '11-50' },
-        { label: '51-200 employees', value: '51-200' },
-        { label: '201-500 employees', value: '201-500' },
-        { label: '500+ employees', value: '500+' },
-      ],
-      admin: {
-        description: 'Number of employees',
-      },
-    },
-    {
-      name: 'annualRevenue',
-      type: 'select',
-      options: [
-        { label: 'Under $1M', value: 'under-1m' },
-        { label: '$1M - $10M', value: '1m-10m' },
-        { label: '$10M - $50M', value: '10m-50m' },
-        { label: '$50M - $100M', value: '50m-100m' },
-        { label: '$100M+', value: '100m-plus' },
-      ],
-      admin: {
-        description: 'Annual revenue range',
-      },
-    },
-    {
       name: 'status',
       type: 'select',
       options: [
@@ -149,22 +94,6 @@ export const Clients: CollectionConfig = {
       },
     },
     {
-      name: 'tags',
-      type: 'select',
-      hasMany: true,
-      options: [
-        { label: 'High Priority', value: 'high-priority' },
-        { label: 'VIP', value: 'vip' },
-        { label: 'Enterprise', value: 'enterprise' },
-        { label: 'Startup', value: 'startup' },
-        { label: 'International', value: 'international' },
-        { label: 'Local', value: 'local' },
-      ],
-      admin: {
-        description: 'Tags for categorization',
-      },
-    },
-    {
       name: 'owner',
       type: 'relationship',
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -174,25 +103,10 @@ export const Clients: CollectionConfig = {
       },
     },
     {
-      name: 'hubspotId',
-      type: 'text',
-      admin: {
-        description: 'HubSpot company ID (if imported from HubSpot)',
-        readOnly: true,
-      },
-    },
-    {
       name: 'lastContact',
       type: 'date',
       admin: {
         description: 'Date of last contact',
-      },
-    },
-    {
-      name: 'nextFollowUp',
-      type: 'date',
-      admin: {
-        description: 'Scheduled follow-up date',
       },
     },
   ],

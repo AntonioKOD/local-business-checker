@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -22,16 +21,16 @@ interface Client {
   industry: string;
   status: string;
   lastContact: string;
-  companySize: string;
-  annualRevenue: string;
-  tags: string[];
+  website?: string;
+  phone?: string;
+  notes?: string;
 }
 
 interface Contact {
   id: string;
   fullName: string;
   email: string;
-  title: string;
+  title?: string;
   status: string;
   lastContact: string;
   role: string;
@@ -204,7 +203,8 @@ const CRMDashboard = ({ currentUser }: { currentUser: { id: string; email: strin
         alert(`Import failed: ${error.error}`);
       }
     } catch (error) {
-      alert('Import failed. Please check your API key and try again.');
+      console.error('Import error:', error);
+      alert('Import failed. Please try again.');
     }
   };
 
@@ -222,19 +222,22 @@ const CRMDashboard = ({ currentUser }: { currentUser: { id: string; email: strin
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          owner: currentUser?.id,
+        }),
       });
 
       if (response.ok) {
         setShowModal(false);
         fetchCRMData(); // Refresh data
-        alert(`${modalType === 'client' ? 'Client' : 'Contact'} added successfully!`);
       } else {
         const error = await response.json();
-        alert(`Failed to add ${modalType}: ${error.error}`);
+        alert(`Failed to create ${modalType}: ${error.error}`);
       }
     } catch (error) {
-      alert(`Failed to add ${modalType}. Please try again.`);
+      console.error('Save error:', error);
+      alert(`Failed to create ${modalType}. Please try again.`);
     } finally {
       setModalLoading(false);
     }
@@ -254,31 +257,27 @@ const CRMDashboard = ({ currentUser }: { currentUser: { id: string; email: strin
       });
 
       if (response.ok) {
-        const result = await response.json();
-        alert(`Lead "${lead.name}" converted to Client "${result.clientName}"!`);
+        alert('Lead converted successfully!');
         fetchCRMData(); // Refresh data
       } else {
         const error = await response.json();
         alert(`Failed to convert lead: ${error.error}`);
       }
     } catch (error) {
+      console.error('Convert error:', error);
       alert('Failed to convert lead. Please try again.');
     }
   };
 
-
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'customer': return 'bg-green-100 text-green-800';
-      case 'opportunity': return 'bg-blue-100 text-blue-800';
+      case 'prospect': return 'bg-blue-100 text-blue-800';
       case 'lead': return 'bg-yellow-100 text-yellow-800';
-      case 'prospect': return 'bg-gray-100 text-gray-800';
-      case 'inactive': return 'bg-red-100 text-red-800';
-      case 'new': return 'bg-blue-100 text-blue-800';
-      case 'contacted': return 'bg-yellow-100 text-yellow-800';
-      case 'qualified': return 'bg-green-100 text-green-800';
-      case 'converted': return 'bg-purple-100 text-purple-800';
-      case 'lost': return 'bg-red-100 text-red-800';
+      case 'opportunity': return 'bg-purple-100 text-purple-800';
+      case 'customer': return 'bg-green-100 text-green-800';
+      case 'inactive': return 'bg-gray-100 text-gray-800';
+      case 'active': return 'bg-green-100 text-green-800';
+      case 'unsubscribed': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -497,12 +496,22 @@ const CRMDashboard = ({ currentUser }: { currentUser: { id: string; email: strin
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {clients.map((client) => (
+                {clients
+                  .filter(client => {
+                    const matchesSearch = !filter.search || 
+                      client.companyName.toLowerCase().includes(filter.search.toLowerCase()) ||
+                      client.industry.toLowerCase().includes(filter.search.toLowerCase());
+                    const matchesStatus = !filter.status || client.status === filter.status;
+                    return matchesSearch && matchesStatus;
+                  })
+                  .map((client) => (
                   <tr key={client.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900">{client.companyName}</div>
-                        <div className="text-sm text-gray-500">{client.companySize} employees</div>
+                        {client.website && (
+                          <div className="text-sm text-gray-500">{client.website}</div>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -514,7 +523,7 @@ const CRMDashboard = ({ currentUser }: { currentUser: { id: string; email: strin
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(client.lastContact).toLocaleDateString()}
+                      {client.lastContact ? new Date(client.lastContact).toLocaleDateString() : 'Never'}
                     </td>
                   </tr>
                 ))}
@@ -568,7 +577,15 @@ const CRMDashboard = ({ currentUser }: { currentUser: { id: string; email: strin
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {contacts.map((contact) => (
+                {contacts
+                  .filter(contact => {
+                    const matchesSearch = !filter.search || 
+                      contact.fullName.toLowerCase().includes(filter.search.toLowerCase()) ||
+                      contact.email.toLowerCase().includes(filter.search.toLowerCase()) ||
+                      contact.client.companyName.toLowerCase().includes(filter.search.toLowerCase());
+                    return matchesSearch;
+                  })
+                  .map((contact) => (
                   <tr key={contact.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
@@ -580,10 +597,10 @@ const CRMDashboard = ({ currentUser }: { currentUser: { id: string; email: strin
                       {contact.client.companyName}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {contact.title}
+                      {contact.role}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(contact.lastContact).toLocaleDateString()}
+                      {contact.lastContact ? new Date(contact.lastContact).toLocaleDateString() : 'Never'}
                     </td>
                   </tr>
                 ))}
@@ -658,10 +675,8 @@ const CRMDashboard = ({ currentUser }: { currentUser: { id: string; email: strin
           <div className="p-6 border-b border-gray-200">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Leads from Funnels</h3>
-                <p className="text-sm text-gray-600 mt-1">
-                  {leads.length} leads captured from your funnels
-                </p>
+                <h3 className="text-lg font-semibold text-gray-900">Leads</h3>
+                <p className="text-sm text-gray-600">Convert leads from your funnels into clients</p>
               </div>
               <div className="flex items-center space-x-2">
                 <div>
@@ -862,27 +877,20 @@ const CRMDashboard = ({ currentUser }: { currentUser: { id: string; email: strin
               <Upload className="w-4 h-4" />
               <span>Start Import</span>
             </button>
-            <div className="text-sm text-gray-600">
-              <p className="mb-2">This will import:</p>
-              <ul className="list-disc list-inside space-y-1">
-                <li>Contacts with their associated companies</li>
-                <li>Company information and details</li>
-                <li>Contact preferences and notes</li>
-                <li>Activity history and interactions</li>
-              </ul>
-            </div>
           </div>
         </div>
       )}
 
       {/* CRM Modal */}
-      <CRMModal
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        type={modalType}
-        onSave={handleSaveRecord}
-        loading={modalLoading}
-      />
+      {showModal && (
+        <CRMModal
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+          type={modalType}
+          onSave={handleSaveRecord}
+          loading={modalLoading}
+        />
+      )}
     </div>
   );
 };

@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/admin/', '/api/'],
       },
     ],
-    sitemap: 'https://buildquick.io/sitemap.xml',
+    sitemap: 'http://localhost:3000/sitemap.xml',
   }
 } 

@@ -46,27 +46,12 @@ export const Contacts: CollectionConfig = {
       },
     },
     {
-      name: 'department',
-      type: 'text',
-      admin: {
-        description: 'Department within the company',
-      },
-    },
-    {
       name: 'client',
       type: 'relationship',
       relationTo: 'clients' as any,
       required: true,
       admin: {
         description: 'Associated company/client',
-      },
-    },
-    {
-      name: 'isPrimary',
-      type: 'checkbox',
-      defaultValue: false,
-      admin: {
-        description: 'Is this the primary contact for the company?',
       },
     },
     {
@@ -121,22 +106,6 @@ export const Contacts: CollectionConfig = {
       },
     },
     {
-      name: 'tags',
-      type: 'select',
-      hasMany: true,
-      options: [
-        { label: 'Key Contact', value: 'key-contact' },
-        { label: 'VIP', value: 'vip' },
-        { label: 'Champion', value: 'champion' },
-        { label: 'Gatekeeper', value: 'gatekeeper' },
-        { label: 'Technical', value: 'technical' },
-        { label: 'Executive', value: 'executive' },
-      ],
-      admin: {
-        description: 'Tags for categorization',
-      },
-    },
-    {
       name: 'owner',
       type: 'relationship',
       relationTo: 'users' as any,
@@ -145,59 +114,10 @@ export const Contacts: CollectionConfig = {
       },
     },
     {
-      name: 'hubspotId',
-      type: 'text',
-      admin: {
-        description: 'HubSpot contact ID (if imported from HubSpot)',
-        readOnly: true,
-      },
-    },
-    {
       name: 'lastContact',
       type: 'date',
       admin: {
         description: 'Date of last contact',
-      },
-    },
-    {
-      name: 'nextFollowUp',
-      type: 'date',
-      admin: {
-        description: 'Scheduled follow-up date',
-      },
-    },
-    {
-      name: 'preferences',
-      type: 'group',
-      fields: [
-        {
-          name: 'preferredContactMethod',
-          type: 'select',
-          options: [
-            { label: 'Email', value: 'email' },
-            { label: 'Phone', value: 'phone' },
-            { label: 'LinkedIn', value: 'linkedin' },
-            { label: 'In Person', value: 'in-person' },
-          ],
-          defaultValue: 'email',
-        },
-        {
-          name: 'timezone',
-          type: 'text',
-          admin: {
-            description: 'Contact timezone (e.g., EST, PST)',
-          },
-        },
-        {
-          name: 'bestTimeToContact',
-          type: 'text',
-          admin: {
-            description: 'Best time to reach this contact',
-          },
-        },
-      ],
-      admin: {
-        description: 'Contact preferences and details',
       },
     },
   ],
