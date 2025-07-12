@@ -124,6 +124,7 @@ const CRMDashboard = ({ currentUser }: { currentUser: { id: string; email: strin
   const fetchCRMData = useCallback(async () => {
     try {
       setLoading(true);
+      console.log('Fetching CRM data for user:', currentUser?.id);
       
       // Fetch all CRM data
       const [clientsRes, contactsRes, activitiesRes, leadsRes] = await Promise.all([
@@ -133,25 +134,40 @@ const CRMDashboard = ({ currentUser }: { currentUser: { id: string; email: strin
         fetch(`/api/crm/leads?userId=${currentUser?.id}`),
       ]);
 
+      console.log('CRM API responses:', {
+        clients: clientsRes.status,
+        contacts: contactsRes.status,
+        activities: activitiesRes.status,
+        leads: leadsRes.status,
+      });
+
       if (clientsRes.ok) {
         const clientsData = await clientsRes.json();
         setClients(clientsData.clients || []);
+      } else {
+        console.error('Failed to fetch clients:', clientsRes.status);
       }
 
       if (contactsRes.ok) {
         const contactsData = await contactsRes.json();
         setContacts(contactsData.contacts || []);
+      } else {
+        console.error('Failed to fetch contacts:', contactsRes.status);
       }
 
       if (activitiesRes.ok) {
         const activitiesData = await activitiesRes.json();
         setActivities(activitiesData.activities || []);
+      } else {
+        console.error('Failed to fetch activities:', activitiesRes.status);
       }
 
       if (leadsRes.ok) {
         const leadsData = await leadsRes.json();
         setLeads(leadsData.leads || []);
         calculateStats(leadsData.leads || []);
+      } else {
+        console.error('Failed to fetch leads:', leadsRes.status);
       }
 
     } catch (error) {
@@ -162,8 +178,11 @@ const CRMDashboard = ({ currentUser }: { currentUser: { id: string; email: strin
   }, [currentUser?.id, calculateStats]);
 
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser?.id) {
       fetchCRMData();
+    } else {
+      console.log('No current user, skipping CRM data fetch');
+      setLoading(false);
     }
   }, [currentUser, fetchCRMData]);
 
@@ -433,13 +452,13 @@ const CRMDashboard = ({ currentUser }: { currentUser: { id: string; email: strin
               <h3 className="text-lg font-semibold text-gray-900">Clients</h3>
               <div className="flex items-center space-x-2">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="text"
                     placeholder="Search clients..."
                     value={filter.search}
                     onChange={(e) => setFilter({ ...filter, search: e.target.value })}
-                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
                 <select
@@ -517,13 +536,13 @@ const CRMDashboard = ({ currentUser }: { currentUser: { id: string; email: strin
               <h3 className="text-lg font-semibold text-gray-900">Contacts</h3>
               <div className="flex items-center space-x-2">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="text"
                     placeholder="Search contacts..."
                     value={filter.search}
                     onChange={(e) => setFilter({ ...filter, search: e.target.value })}
-                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
                 <button 
@@ -652,13 +671,13 @@ const CRMDashboard = ({ currentUser }: { currentUser: { id: string; email: strin
               </div>
               <div className="flex items-center space-x-2">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="text"
                     placeholder="Search leads..."
                     value={filter.search}
                     onChange={(e) => setFilter({ ...filter, search: e.target.value })}
-                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
                 <select

@@ -11,17 +11,23 @@ export default function CRMPage() {
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
+        console.log('Checking authentication status...');
         const response = await fetch('/api/auth/verify-token');
+        console.log('Auth response status:', response.status);
+        
         if (response.ok) {
           const data = await response.json();
+          console.log('Auth successful, user:', data.user);
           setCurrentUser(data.user);
         } else {
+          console.log('Auth failed, redirecting to home');
           // Redirect to home if not authenticated
           window.location.href = '/';
         }
       } catch (error) {
         console.error('Auth check failed:', error);
-        window.location.href = '/';
+        // Don't redirect on network errors, just show error
+        setAuthLoading(false);
       } finally {
         setAuthLoading(false);
       }

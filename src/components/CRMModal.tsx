@@ -106,7 +106,7 @@ const CRMModal = ({ isOpen, onClose, type, onSave, loading = false }: CRMModalPr
                     required
                     value={formData.companyName}
                     onChange={(e) => handleInputChange('companyName', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
                 <div>
@@ -116,7 +116,7 @@ const CRMModal = ({ isOpen, onClose, type, onSave, loading = false }: CRMModalPr
                   <select
                     value={formData.industry}
                     onChange={(e) => handleInputChange('industry', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="technology">Technology</option>
                     <option value="healthcare">Healthcare</option>
@@ -141,7 +141,7 @@ const CRMModal = ({ isOpen, onClose, type, onSave, loading = false }: CRMModalPr
                     type="url"
                     value={formData.website}
                     onChange={(e) => handleInputChange('website', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
                 <div>
