@@ -195,7 +195,7 @@ export default function FunnelsPage() {
                     Create and manage high-converting lead capture funnels
                   </p>
                 </div>
-                <div className="mt-4 md:mt-0">
+                <div className="mt-4 md:mt-0 text-white">
                   <Link
                     href="/funnel-builder"
                     className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl transform hover:scale-105"
@@ -233,7 +233,7 @@ export default function FunnelsPage() {
               </p>
               <Link
                 href="/funnel-builder"
-                className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl transform hover:scale-105"
+                className="inline-flex items-center px-6 py-3 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl transform hover:scale-105"
               >
                 <Plus className="w-5 h-5 mr-2" />
                 Create Your First Funnel
