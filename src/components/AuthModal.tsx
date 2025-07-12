@@ -2,14 +2,16 @@
 
 import React, { useState } from 'react';
 import { X, User, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import Link from 'next/link';
 
 interface AuthModalProps {
   onClose: () => void;
   onAuthSuccess: (user: { id: string; email: string; firstName: string; lastName: string }, token: string) => void;
+  onSignUpClick?: () => void;
 }
 
-const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) => {
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess, onSignUpClick }) => {
+  const [mode] = useState<'login' | 'register'>('login');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -247,17 +249,19 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess }) => {
 
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
-              {mode === 'login' ? "Don't have an account?" : "Already have an account?"}
-              <button
-                onClick={() => {
-                  setMode(mode === 'login' ? 'register' : 'login');
-                  setError(null);
-                  setFormData({ email: '', password: '', firstName: '', lastName: '' });
-                }}
-                className="ml-1 text-blue-600 hover:underline font-medium"
-              >
-                {mode === 'login' ? 'Sign up' : 'Sign in'}
-              </button>
+              Don&apos;t have an account?{' '}
+              {onSignUpClick ? (
+                <button
+                  onClick={onSignUpClick}
+                  className="text-blue-600 hover:text-blue-700 font-medium underline"
+                >
+                  Sign up
+                </button>
+              ) : (
+                <Link href="/auth/register" className="text-blue-600 hover:text-blue-700 font-medium underline">
+                  Sign up
+                </Link>
+              )}
             </p>
           </div>
         </div>

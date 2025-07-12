@@ -15,7 +15,7 @@ export async function GET() {
     // 1. Fetch all watched leads
     const { docs: watchedLeads } = await payload.find({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      collection: 'leads' as any,
+      collection: 'clientleads' as any,
       where: {
         isWatched: {
           equals: true,
@@ -63,7 +63,7 @@ export async function GET() {
               // 5. Update lead with new data and last scanned time
         await payload.update({
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          collection: 'leads' as any,
+          collection: 'clientleads' as any,
           id: lead.id as string,
         data: {
           businessData: { ...oldData, ...newData },

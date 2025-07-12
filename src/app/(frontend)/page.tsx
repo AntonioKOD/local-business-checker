@@ -1,14 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
-import { Search, MapPin, Globe, CheckCircle, XCircle, AlertCircle, Crown, LogOut, BarChart3, TrendingUp, Zap, Lightbulb, Briefcase, Bell } from 'lucide-react';
-import PaymentModal from '@/components/PaymentModal';
-import AnalyticsDashboard from '@/components/AnalyticsDashboard';
-import AuthModal from '@/components/AuthModal';
+import { Search, MapPin, Globe, CheckCircle, XCircle, AlertCircle, Crown, Zap, Lightbulb, Briefcase, Plus, Download, TrendingUp } from 'lucide-react';
 import WebsiteReportModal from '@/components/WebsiteReportModal';
-import LeadFunnel from '@/components/LeadFunnel';
-import NotificationsPanel from '@/components/NotificationsPanel';
 
 // Enhanced interfaces to match backend
 interface WebsiteStatus {
@@ -45,8 +40,8 @@ interface BusinessInsights {
 interface Business {
   name: string;
   address: string;
-  rating: number;
-  review_count: number;
+  rating: number | string;
+  total_ratings?: number | string;
   phone: string;
   website: string;
   website_status: WebsiteStatus;
@@ -58,6 +53,15 @@ interface Business {
   lead_score?: number;
   website_quality?: WebsiteQuality;
   business_insights?: BusinessInsights;
+  emails?: string[];
+  social_media?: {
+    facebook?: string[];
+    instagram?: string[];
+    linkedin?: string[];
+    twitter?: string[];
+    youtube?: string[];
+    yelp?: string[];
+  };
 }
 
 interface MarketAnalysis {
@@ -93,41 +97,22 @@ interface SearchResults {
   };
 }
 
-export default function BusinessChecker() {
+export default function ClientCompass() {
   const [query, setQuery] = useState('');
   const [location, setLocation] = useState('');
   const [results, setResults] = useState<SearchResults | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
   const [currentUser, setCurrentUser] = useState<{ id: string; email: string; firstName: string; lastName: string; subscriptionStatus?: string } | null>(null);
-  const [activeTab, setActiveTab] = useState<'search' | 'analytics' | 'funnel'>('search');
   const [authLoading, setAuthLoading] = useState(true);
   const [reportUrl, setReportUrl] = useState<string | null>(null);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
-  
+
   // Premium search settings (only for logged-in users)
   const [maxResults, setMaxResults] = useState(10);
   const [filterNoWebsite, setFilterNoWebsite] = useState(false);
   const [radiusMiles, setRadiusMiles] = useState(10); // Default 10 miles
   const [minRating, setMinRating] = useState(0);
-  const [minLeadScore, setMinLeadScore] = useState(0);
-  
-  // Analytics data
-  const [analyticsData, setAnalyticsData] = useState<{
-    totalSearches: number;
-    searchesThisMonth: number;
-    businessesFound: number;
-    websitesAnalyzed: number;
-    accessibleWebsites: number;
-    searchHistory: Array<{ date: string; searches: number; businessesFound: number; }>;
-    topLocations: Array<{ location: string; searches: number; businesses: number; }>;
-    topQueries: Array<{ query: string; searches: number; avgBusinesses: number; }>;
-    websiteHealth: { accessible: number; inaccessible: number; noWebsite: number; };
-  } | null>(null);
-  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+
   const [lastSearchTime, setLastSearchTime] = useState(0);
   const SEARCH_DEBOUNCE_MS = 2000; // Minimum 2 seconds between searches
   const [addingLead, setAddingLead] = useState<string | null>(null);
@@ -148,56 +133,10 @@ export default function BusinessChecker() {
     }
   }, [authLoading]);
 
-  const fetchAnalyticsData = useCallback(async () => {
-    if (!currentUser || analyticsLoading) return; // Prevent multiple simultaneous calls
-    
-    setAnalyticsLoading(true);
-    try {
-      const response = await fetch(`/api/analytics?userId=${currentUser.id}`);
-      if (response.ok) {
-        const data = await response.json();
-        setAnalyticsData(data);
-      } else {
-        console.error('Failed to fetch analytics data');
-      }
-    } catch (error) {
-      console.error('Error fetching analytics:', error);
-    } finally {
-      setAnalyticsLoading(false);
-    }
-  }, [currentUser, analyticsLoading]); // Added analyticsLoading to prevent concurrent calls
-
   // Check authentication status on page load
   useEffect(() => {
     checkAuthStatus();
   }, [checkAuthStatus]);
-
-  // Fetch analytics data when analytics tab is active
-  useEffect(() => {
-    if (activeTab === 'analytics' && currentUser && !analyticsData) {
-      fetchAnalyticsData();
-    }
-  }, [activeTab, currentUser, analyticsData, fetchAnalyticsData]);
-
-  // Fetch unread notification count
-  useEffect(() => {
-    if (currentUser) {
-      const fetchCount = async () => {
-        try {
-          // This re-uses the notifications endpoint, which is slightly inefficient
-          // In a real app, you might create a dedicated count endpoint.
-          const response = await fetch(`/api/notifications?userId=${currentUser.id}&unread=true`);
-          if(response.ok) {
-            const data = await response.json();
-            setUnreadCount(data.length);
-          }
-        } catch (error) {
-          console.error("Failed to fetch notification count", error);
-        }
-      };
-      fetchCount();
-    }
-  }, [currentUser]);
 
   // Show loading while checking authentication
   if (authLoading) {
@@ -210,13 +149,6 @@ export default function BusinessChecker() {
       </div>
     );
   }
-
-  const handleAuthSuccess = (user: { id: string; email: string; firstName: string; lastName: string }, token: string) => {
-    setCurrentUser(user);
-    setShowAuthModal(false);
-    // Store token in localStorage as backup
-    localStorage.setItem('auth-token', token);
-  };
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -247,7 +179,7 @@ export default function BusinessChecker() {
           filterNoWebsite: currentUser ? filterNoWebsite : false,
           radiusKm: radiusMiles * 1.60934, // Convert miles to kilometers
           minRating: currentUser ? minRating : 0,
-          minLeadScore: currentUser ? minLeadScore : 0,
+          minLeadScore: 0,
         }),
       });
 
@@ -255,7 +187,8 @@ export default function BusinessChecker() {
         const errorData = await response.json();
         if (errorData.requiresSubscription) {
           setError(errorData.message);
-          setShowPaymentModal(true);
+          // Redirect to home page to trigger payment modal
+          window.location.href = '/';
           return;
         }
         throw new Error(errorData.error || 'Search failed');
@@ -270,72 +203,106 @@ export default function BusinessChecker() {
     }
   };
 
-  const handlePaymentSuccess = (user: { id: string; email: string; firstName: string; lastName: string }) => {
-    // User is already passed from PaymentModal with token set
-    setCurrentUser(user);
-    setShowPaymentModal(false);
-    
-    // Refresh the search if there was one
-    if (results && query && location) {
-      handleSearch({ preventDefault: () => {} } as React.FormEvent);
+  // CSV Export functionality
+  const exportToCSV = () => {
+    if (!results?.businesses || results.businesses.length === 0) {
+      alert('No search results to export');
+      return;
     }
-  };
 
-  const refreshAnalytics = () => {
-    setAnalyticsData(null);
-    fetchAnalyticsData();
+    const csvData = results.businesses.map(business => ({
+      Name: business.name,
+      Address: business.address,
+      Phone: business.phone || '',
+      Website: business.website || '',
+      Rating: business.rating,
+      'Total Ratings': business.total_ratings || '',
+      'Website Status': business.website_status?.accessible ? 'Accessible' : 'Inaccessible',
+      'Lead Score': business.lead_score || '',
+      'Business Insights': business.business_insights?.recommended_services?.join(', ') || '',
+      'Digital Presence': business.business_insights?.digital_presence || '',
+      'Opportunity Score': business.business_insights?.opportunity_score || '',
+      Emails: Array.isArray(business.emails) ? business.emails.join(', ') : '',
+      'Social Media': business.social_media ? Object.values(business.social_media).flat().join(', ') : '',
+      'Place ID': business.place_id,
+      Latitude: business.location?.lat || '',
+      Longitude: business.location?.lng || ''
+    }));
+
+    const csvContent = [
+      Object.keys(csvData[0]).join(','),
+      ...csvData.map(row => Object.values(row).map(value => `"${String(value).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `business-search-results-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleLogout = async () => {
     try {
-      // Use PayloadCMS logout endpoint
-      await fetch('/api/users/logout', { method: 'POST' });
-      // Also clear our custom auth endpoint as backup
       await fetch('/api/auth/logout', { method: 'POST' });
-      localStorage.removeItem('auth-token');
-      localStorage.removeItem('user');
       setCurrentUser(null);
       setResults(null);
-      setActiveTab('search');
-      setAnalyticsData(null);
+      localStorage.removeItem('auth-token');
     } catch (error) {
       console.error('Logout failed:', error);
     }
   };
 
   const getWebsiteStatusIcon = (status: Business['website_status']) => {
-    if (!status) return <AlertCircle className="w-4 h-4 text-gray-400" />;
-    
+    if (!status) {
+      return <AlertCircle className="w-5 h-5 text-gray-400" />;
+    }
     if (status.accessible) {
-      return <CheckCircle className="w-4 h-4 text-green-500" />;
+      return <CheckCircle className="w-5 h-5 text-green-600" />;
+    } else if (status.status_code === 0) {
+      return <XCircle className="w-5 h-5 text-red-600" />;
     } else {
-      return <XCircle className="w-4 h-4 text-red-500" />;
+      return <AlertCircle className="w-5 h-5 text-yellow-600" />;
     }
   };
 
   const getWebsiteStatusText = (status: Business['website_status']) => {
-    if (!status) return 'Unknown';
-    
+    if (!status) {
+      return 'Status unknown';
+    }
     if (status.accessible) {
-      return `Accessible (${status.load_time?.toFixed(2)}s)`;
+      return 'Website accessible';
+    } else if (status.status_code === 0) {
+      return 'No website found';
     } else {
-      return `Error: ${status.error || `HTTP ${status.status_code}`}`;
+      return `Website error (${status.status_code})`;
     }
   };
 
   const handleAddLead = async (business: Business) => {
-    if (!currentUser) {
-      setError("Please log in to add leads.");
-      setShowAuthModal(true);
-      return;
-    }
-
+    if (!currentUser) return;
+    
     setAddingLead(business.place_id);
     try {
       const response = await fetch('/api/leads', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ business, userId: currentUser.id }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          businessName: business.name,
+          businessAddress: business.address,
+          businessPhone: business.phone,
+          businessWebsite: business.website,
+          businessRating: business.rating,
+          leadScore: business.lead_score || 0,
+          websiteStatus: business.website_status,
+          businessInsights: business.business_insights,
+        }),
       });
 
       if (!response.ok) {
@@ -354,7 +321,7 @@ export default function BusinessChecker() {
   };
 
   return (
-    <>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Structured Data for SEO */}
       <script
         type="application/ld+json"
@@ -362,732 +329,447 @@ export default function BusinessChecker() {
           __html: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "WebApplication",
-            "name": "BusinessChecker",
+            "name": "Client Compass",
             "url": "https://buildquick.io",
-            "description": "Discover local businesses and get comprehensive website analysis. Find businesses without websites, check website accessibility, and get detailed analytics.",
+            "description": "Discover local businesses and get comprehensive website analysis.",
             "applicationCategory": "BusinessApplication",
             "operatingSystem": "Web",
             "offers": {
               "@type": "Offer",
-              "price": "7.00",
-              "priceCurrency": "USD",
-              "priceSpecification": {
-                "@type": "RecurringPaymentFrequency",
-                "frequency": "monthly"
-              }
-            },
-            "featureList": [
-              "Local business search",
-              "Website analysis",
-              "Accessibility checking",
-              "Lead generation",
-              "Business analytics",
-              "Competitor analysis"
-            ],
-            "provider": {
-              "@type": "Organization",
-              "name": "BusinessChecker",
-              "url": "https://buildquick.io"
+              "price": "20.00",
+              "priceCurrency": "USD"
             }
           })
         }}
       />
 
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-40">
-        <div className="container mx-auto px-4">
-          <div className="flex justify-between items-center py-3">
-            <div className="flex items-center space-x-4">
-              <Link href="/" className="flex items-center space-x-2">
-                <Briefcase className="w-7 h-7 text-blue-600" />
-                <h1 className="text-2xl font-bold text-gray-800 tracking-tight">BusinessChecker</h1>
-              </Link>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              {currentUser ? (
-                <>
-                  <button
-                    onClick={() => setActiveTab('search')}
-                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                      activeTab === 'search' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'
-                    }`}
-                  >
-                    <Search className="w-4 h-4 inline-block mr-1.5" />
-                    Search
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('analytics')}
-                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                      activeTab === 'analytics' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'
-                    }`}
-                  >
-                    <BarChart3 className="w-4 h-4 inline-block mr-1.5" />
-                    Analytics
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('funnel')}
-                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                      activeTab === 'funnel' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'
-                    }`}
-                  >
-                    <TrendingUp className="w-4 h-4 inline-block mr-1.5" />
-                    Lead Funnel
-                  </button>
-                  <div className="flex items-center space-x-2 pl-4 border-l border-gray-200">
-                    <button onClick={() => setShowNotifications(!showNotifications)} className="relative p-2 rounded-full hover:bg-gray-100">
-                      <Bell className="w-5 h-5 text-gray-600"/>
-                      {unreadCount > 0 && (
-                        <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
-                      )}
-                    </button>
-                    <span className="text-sm text-gray-600 hidden sm:inline">{currentUser.firstName} {currentUser.lastName}</span>
-                    <button onClick={handleLogout} className="text-gray-500 hover:text-red-600" title="Logout">
-                      <LogOut className="w-5 h-5" />
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <div className="flex space-x-3">
-                  <button
-                    onClick={() => setShowAuthModal(true)}
-                    className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-4 py-2 rounded-full text-sm font-medium shadow-sm transition-all duration-200"
-                  >
-                    Login
-                  </button>
-                  <button
-                    onClick={() => setShowPaymentModal(true)}
-                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-2.5 rounded-full text-sm font-medium shadow-lg transform hover:scale-105 transition-all duration-200"
-                  >
-                    Upgrade to Premium
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {showNotifications && currentUser && (
-        <NotificationsPanel 
-          userId={currentUser.id}
-          onClose={() => setShowNotifications(false)}
-        />
-      )}
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Premium User Navigation */}
-        {currentUser && (
-          <div className="mb-8">
-            <nav className="flex space-x-8">
-              <button
-                onClick={() => setActiveTab('search')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'search'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Business Search
-              </button>
-              <button
-                onClick={() => setActiveTab('analytics')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'analytics'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Analytics Dashboard
-              </button>
-              <button
-                onClick={() => setActiveTab('funnel')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'funnel'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Lead Funnel
-              </button>
-            </nav>
-          </div>
-        )}
-
-        {/* Content based on active tab */}
-        {activeTab === 'analytics' && currentUser ? (
-          analyticsLoading ? (
-            <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading your analytics data...</p>
-            </div>
-          ) : analyticsData ? (
-            <AnalyticsDashboard data={analyticsData} onRefresh={refreshAnalytics} />
-          ) : (
-            <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <BarChart3 className="w-8 h-8 text-blue-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Analytics Data Yet</h3>
-              <p className="text-gray-600 mb-4">
-                Start searching for businesses to see your analytics dashboard with insights and trends.
-              </p>
-              <button
-                onClick={() => setActiveTab('search')}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
-              >
-                Start Searching
-              </button>
-            </div>
-                     )
-        ) : (
-          <>
-            {/* Hero Section */}
-            <div className="text-center mb-12 relative">
-              {/* Background decoration */}
-              <div className="absolute inset-0 -z-10">
-                <div className="absolute top-20 left-1/4 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
-                <div className="absolute top-32 right-1/4 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
-                <div className="absolute top-48 left-1/2 w-72 h-72 bg-pink-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
-              </div>
-
-              <div className="relative">
-                <h1 className="text-5xl md:text-6xl font-bold mb-6">
-                  <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                    Local Business
-                  </span>
-                  <br />
-                  <span className="text-gray-900">Website Checker</span>
-                </h1>
-                <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
-                  Discover local businesses and analyze their online presence in seconds. 
-                  <span className="text-blue-600 font-semibold">Get actionable insights</span> to grow your business.
-                </p>
-                
-                {!currentUser && (
-                  <div className="bg-white/70 backdrop-blur-sm border border-blue-200 rounded-2xl p-6 mb-8 shadow-lg max-w-2xl mx-auto">
-                    <div className="flex items-center justify-center space-x-3 mb-4">
-                      <div className="w-12 h-12 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center">
-                        <span className="text-2xl">🎯</span>
-                      </div>
-                      <div className="text-left">
-                        <h3 className="text-lg font-bold text-gray-900">Free Trial Available</h3>
-                        <p className="text-sm text-gray-600">No credit card required</p>
-                      </div>
-                    </div>
-                    <p className="text-gray-800 text-lg">
-                      Get <span className="font-bold text-blue-600">2 free searches</span> to explore our platform. 
-                      Upgrade for unlimited searches and premium analytics!
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Search Form */}
-            <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 mb-8 border border-white/20">
-              <form onSubmit={handleSearch} className="space-y-8">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="group">
-                    <label htmlFor="query" className="block text-sm font-semibold text-gray-700 mb-3">
-                      What type of business are you looking for?
-                    </label>
-                    <div className="relative">
-                      <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 group-focus-within:text-blue-500 transition-colors" />
-                      <input
-                        type="text"
-                        id="query"
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        placeholder="restaurants, dentists, plumbers, hotels..."
-                        className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-black placeholder-gray-400 bg-white/90"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div className="group">
-                    <label htmlFor="location" className="block text-sm font-semibold text-gray-700 mb-3">
-                      Where should we search?
-                    </label>
-                    <div className="relative">
-                      <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 group-focus-within:text-blue-500 transition-colors" />
-                      <input
-                        type="text"
-                        id="location"
-                        value={location}
-                        onChange={(e) => setLocation(e.target.value)}
-                        placeholder="New York, NY or 10001"
-                        className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-black placeholder-gray-400 bg-white/90"
-                        required
-                      />
-                    </div>
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
+        <div className="space-y-8">
+          {/* Search Section */}
+          <div className="bg-white rounded-2xl shadow-lg p-8">
+            <form onSubmit={handleSearch} className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="group">
+                  <label htmlFor="query" className="block text-sm font-semibold text-gray-700 mb-3">
+                    What type of business are you looking for?
+                  </label>
+                  <div className="relative">
+                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 group-focus-within:text-blue-500 transition-colors" />
+                    <input
+                      type="text"
+                      id="query"
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      placeholder="restaurants, dentists, plumbers, hotels..."
+                      className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-black placeholder-gray-400 bg-white/90"
+                      required
+                    />
                   </div>
                 </div>
-
-                {/* Premium Search Options - Only visible for logged-in users */}
-                {currentUser && (
-                  <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-2xl p-6 space-y-6">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <Crown className="w-5 h-5 text-yellow-600" />
-                      <h3 className="text-lg font-bold text-gray-900">Premium Search Options</h3>
-                    </div>
-                    
-                    <div className="grid md:grid-cols-3 gap-6">
-                      <div className="group">
-                        <label htmlFor="maxResults" className="block text-sm font-semibold text-gray-700 mb-2">
-                          Number of businesses to fetch
-                        </label>
-                        <select
-                          id="maxResults"
-                          value={maxResults}
-                          onChange={(e) => setMaxResults(parseInt(e.target.value))}
-                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-black bg-white"
-                        >
-                          <option value={10}>10 businesses</option>
-                          <option value={20}>20 businesses</option>
-                          <option value={30}>30 businesses</option>
-                          <option value={50}>50 businesses</option>
-                          <option value={100}>100 businesses</option>
-                        </select>
-                      </div>
-                      
-                      <div className="group">
-                        <label htmlFor="radiusMiles" className="block text-sm font-semibold text-gray-700 mb-2">
-                          Search Radius
-                        </label>
-                        <select
-                          id="radiusMiles"
-                          value={radiusMiles}
-                          onChange={(e) => setRadiusMiles(parseInt(e.target.value))}
-                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-black bg-white"
-                        >
-                          <option value={1}>1 mile</option>
-                          <option value={5}>5 miles</option>
-                          <option value={10}>10 miles</option>
-                          <option value={25}>25 miles</option>
-                          <option value={50}>50 miles</option>
-                        </select>
-                      </div>
-
-                      <div className="group">
-                        <label htmlFor="minRating" className="block text-sm font-semibold text-gray-700 mb-2">
-                          Minimum Rating
-                        </label>
-                        <select
-                          id="minRating"
-                          value={minRating}
-                          onChange={(e) => setMinRating(parseFloat(e.target.value))}
-                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-black bg-white"
-                        >
-                          <option value={0}>Any</option>
-                          <option value={3}>3.0+</option>
-                          <option value={3.5}>3.5+</option>
-                          <option value={4}>4.0+</option>
-                          <option value={4.5}>4.5+</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-6">
-                       <div className="group">
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Filter by Website Status
-                        </label>
-                        <div className="flex items-center space-x-3 p-3 border-2 border-gray-200 rounded-xl bg-white">
-                          <input
-                            type="checkbox"
-                            id="filterNoWebsite"
-                            checked={filterNoWebsite}
-                            onChange={(e) => setFilterNoWebsite(e.target.checked)}
-                            className="w-4 h-4 text-blue-600 bg-white border-2 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-                          />
-                          <label htmlFor="filterNoWebsite" className="text-sm font-medium text-gray-700 cursor-pointer">
-                            Only businesses without websites
-                          </label>
-                        </div>
-                      </div>
-
-                      <div className="group">
-                        <label htmlFor="minLeadScore" className="block text-sm font-semibold text-gray-700 mb-2">
-                          Minimum Lead Score
-                        </label>
-                        <input
-                          type="range"
-                          id="minLeadScore"
-                          min="0"
-                          max="100"
-                          value={minLeadScore}
-                          onChange={(e) => setMinLeadScore(parseInt(e.target.value))}
-                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                        />
-                         <div className="text-center text-sm text-gray-600 mt-1">
-                          {minLeadScore} / 100
-                        </div>
-                      </div>
-                    </div>
+                <div className="group">
+                  <label htmlFor="location" className="block text-sm font-semibold text-gray-700 mb-3">
+                    Where should we search?
+                  </label>
+                  <div className="relative">
+                    <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 group-focus-within:text-blue-500 transition-colors" />
+                    <input
+                      type="text"
+                      id="location"
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                      placeholder="New York, NY or 10001"
+                      className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-black placeholder-gray-400 bg-white/90"
+                      required
+                    />
                   </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold py-4 px-8 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl disabled:transform-none disabled:shadow-md"
-                >
-                  {loading ? (
-                    <div className="flex items-center justify-center space-x-2">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                      <span>Searching businesses...</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center space-x-2">
-                      <Search className="w-5 h-5" />
-                      <span>Search Businesses</span>
-                    </div>
-                  )}
-                </button>
-              </form>
-            </div>
-
-            {/* Error Message */}
-            {error && (
-              <div className="bg-red-50/80 backdrop-blur-sm border border-red-200 rounded-2xl p-6 mb-6 shadow-lg">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                    <XCircle className="w-5 h-5 text-red-600" />
-                  </div>
-                  <p className="text-red-800 font-medium">{error}</p>
                 </div>
               </div>
-            )}
 
-            {/* Search Results */}
-            {results && (
-              <div className="space-y-8">
-                {/* Statistics */}
-                <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-white/20">
-                  <div className="flex items-center space-x-3 mb-6">
-                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
-                      <CheckCircle className="w-6 h-6 text-white" />
-                    </div>
-                    <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-                      Search Results
-                    </h2>
+              {/* Premium Search Options - Only visible for logged-in users */}
+              {currentUser && (
+                <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-2xl p-6 space-y-6">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Crown className="w-5 h-5 text-yellow-600" />
+                    <h3 className="text-lg font-bold text-gray-900">Premium Search Options</h3>
                   </div>
                   
-                  {/* Usage Info for Free Users */}
-                  {results.payment_info.is_free_user && (
-                    <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-2xl p-6 mb-8 shadow-lg">
-                      <div className="flex flex-col md:flex-row md:justify-between md:items-center space-y-4 md:space-y-0">
-                        <div className="flex items-center space-x-4">
-                          <div className="w-12 h-12 bg-gradient-to-r from-amber-400 to-orange-400 rounded-full flex items-center justify-center">
-                            <Crown className="w-6 h-6 text-white" />
-                          </div>
-                          <div>
-                            <p className="text-amber-900 font-bold text-lg">
-                              Free Trial: Showing {results.payment_info.showing} of {results.payment_info.total_found} results found
-                            </p>
-                            {results.payment_info.searches_remaining !== undefined && (
-                              <p className="text-amber-700 text-sm mt-1">
-                                {results.payment_info.searches_remaining} free searches remaining
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => setShowPaymentModal(true)}
-                          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-3 rounded-full font-bold shadow-lg transform hover:scale-105 transition-all duration-200"
-                        >
-                          Unlock All Results - $7/month
-                        </button>
-                      </div>
+                  <div className="grid md:grid-cols-3 gap-6">
+                    <div className="group">
+                      <label htmlFor="maxResults" className="block text-sm font-semibold text-gray-700 mb-2">
+                        Number of businesses to fetch
+                      </label>
+                      <select
+                        id="maxResults"
+                        value={maxResults}
+                        onChange={(e) => setMaxResults(parseInt(e.target.value))}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-black bg-white"
+                      >
+                        <option value={10}>10 businesses</option>
+                        <option value={20}>20 businesses</option>
+                        <option value={30}>30 businesses</option>
+                        <option value={50}>50 businesses</option>
+                        <option value={100}>100 businesses</option>
+                      </select>
                     </div>
-                  )}
+                    
+                    <div className="group">
+                      <label htmlFor="radiusMiles" className="block text-sm font-semibold text-gray-700 mb-2">
+                        Search radius (miles)
+                      </label>
+                      <select
+                        id="radiusMiles"
+                        value={radiusMiles}
+                        onChange={(e) => setRadiusMiles(parseInt(e.target.value))}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-black bg-white"
+                      >
+                        <option value={5}>5 miles</option>
+                        <option value={10}>10 miles</option>
+                        <option value={25}>25 miles</option>
+                        <option value={50}>50 miles</option>
+                        <option value={100}>100 miles</option>
+                      </select>
+                    </div>
+                    
+                    <div className="group">
+                      <label htmlFor="minRating" className="block text-sm font-semibold text-gray-700 mb-2">
+                        Minimum rating
+                      </label>
+                      <select
+                        id="minRating"
+                        value={minRating}
+                        onChange={(e) => setMinRating(parseFloat(e.target.value))}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-black bg-white"
+                      >
+                        <option value={0}>Any rating</option>
+                        <option value={3.0}>3.0+ stars</option>
+                        <option value={3.5}>3.5+ stars</option>
+                        <option value={4.0}>4.0+ stars</option>
+                        <option value={4.5}>4.5+ stars</option>
+                      </select>
+                    </div>
+                  </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 text-center shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105">
-                      <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <Globe className="w-6 h-6 text-white" />
+                  <div className="flex items-center space-x-4">
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={filterNoWebsite}
+                        onChange={(e) => setFilterNoWebsite(e.target.checked)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700">Only show businesses without websites</span>
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold py-4 px-8 rounded-xl shadow-lg transform hover:scale-105 disabled:hover:scale-100 transition-all duration-200"
+              >
+                {loading ? (
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+                    <span>Searching...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center space-x-2">
+                    <Search className="w-5 h-5" />
+                    <span>Search Local Businesses</span>
+                  </div>
+                )}
+              </button>
+            </form>
+          </div>
+
+          {/* Error Display */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+              <div className="flex items-center space-x-2">
+                <XCircle className="w-5 h-5 text-red-600" />
+                <p className="text-red-800 font-medium">{error}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Results Section */}
+          {results && (
+            <div className="space-y-6">
+              {/* Search Statistics */}
+              <div className="bg-white rounded-2xl shadow-lg p-8">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+                  <div className="bg-blue-50 rounded-xl p-4">
+                    <div className="text-3xl font-bold text-blue-600">{results.statistics.total_businesses}</div>
+                    <div className="text-sm text-gray-600 mt-1">Total Businesses</div>
+                  </div>
+                  <div className="bg-green-50 rounded-xl p-4">
+                    <div className="text-3xl font-bold text-green-600">{results.statistics.website_percentage}%</div>
+                    <div className="text-sm text-gray-600 mt-1">Have Websites</div>
+                  </div>
+                  <div className="bg-yellow-50 rounded-xl p-4">
+                    <div className="text-3xl font-bold text-yellow-600">{results.statistics.accessible_percentage}%</div>
+                    <div className="text-sm text-gray-600 mt-1">Accessible Sites</div>
+                  </div>
+                  <div className="bg-purple-50 rounded-xl p-4">
+                    <div className="text-3xl font-bold text-purple-600">{results.statistics.average_rating.toFixed(1)}</div>
+                    <div className="text-sm text-gray-600 mt-1">Avg Rating</div>
+                  </div>
+                </div>
+
+                {/* CSV Export Button */}
+                <div className="mt-6 flex justify-center">
+                  <button
+                    onClick={exportToCSV}
+                    className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium rounded-xl shadow-lg transform hover:scale-105 transition-all duration-200"
+                  >
+                    <Download className="w-5 h-5 mr-2" />
+                    Export to CSV
+                  </button>
+                </div>
+
+                {/* Payment Info */}
+                {results.payment_info && (
+                  <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-gray-600">
+                          Showing {results.payment_info.showing} of {results.payment_info.total_found} businesses found
+                        </p>
+                        {results.payment_info.is_free_user && results.payment_info.remaining > 0 && (
+                          <p className="text-xs text-blue-600 mt-1">
+                            Upgrade to see all {results.payment_info.remaining} remaining businesses
+                          </p>
+                        )}
                       </div>
-                      <div className="text-3xl font-bold text-blue-700 mb-1">{results.statistics.total_businesses}</div>
-                      <div className="text-sm font-medium text-blue-600">Total Businesses</div>
+                      {results.payment_info.is_free_user && results.payment_info.remaining > 0 && (
+                        <button
+                          onClick={() => window.location.href = '/'}
+                          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-md transform hover:scale-105 transition-all duration-200"
+                        >
+                          Upgrade - ${results.payment_info.upgrade_price}
+                        </button>
+                      )}
                     </div>
-                    <div className="bg-gradient-to-br from-green-50 to-emerald-100 rounded-2xl p-6 text-center shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105">
-                      <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <CheckCircle className="w-6 h-6 text-white" />
-                      </div>
-                      <div className="text-3xl font-bold text-green-700 mb-1">{results.statistics.businesses_with_websites}</div>
-                      <div className="text-sm font-medium text-green-600">With Websites</div>
-                    </div>
-                    <div className="bg-gradient-to-br from-red-50 to-orange-100 rounded-2xl p-6 text-center shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105">
-                      <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-orange-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <XCircle className="w-6 h-6 text-white" />
-                      </div>
-                      <div className="text-3xl font-bold text-red-700 mb-1">{results.statistics.no_website_count}</div>
-                      <div className="text-sm font-medium text-red-600">No Website</div>
-                    </div>
-                    {/* New Stat: High Opportunity Leads */}
-                    {currentUser && (
-                      <div className="bg-gradient-to-br from-yellow-50 to-amber-100 rounded-2xl p-6 text-center shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105">
-                        <div className="w-12 h-12 bg-gradient-to-r from-yellow-500 to-amber-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                          <Zap className="w-6 h-6 text-white" />
+                  </div>
+                )}
+              </div>
+
+              {/* Business Cards */}
+              <div className="grid gap-6">
+                {results.businesses.map((business, index) => (
+                  <div key={business.place_id || index} className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
+                    <div className="flex flex-col lg:flex-row lg:items-start lg:space-x-6">
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between mb-4">
+                          <div>
+                            <h3 className="text-xl font-bold text-gray-900 mb-2">{business.name}</h3>
+                            <p className="text-gray-600 mb-2">{business.address}</p>
+                            <div className="flex items-center space-x-4 text-sm text-gray-500">
+                              <span>{business.phone || 'No phone'}</span>
+                              <div className="flex items-center space-x-1">
+                                <span className="text-yellow-500">★</span>
+                                <span>
+                                  {typeof business.rating === 'number' ? business.rating.toFixed(1) : business.rating}
+                                </span>
+                                {business.total_ratings && (
+                                  <span className="text-gray-400">
+                                    ({typeof business.total_ratings === 'number' ? business.total_ratings : business.total_ratings} reviews)
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          {business.lead_score && (
+                            <div className="bg-gradient-to-r from-green-500 to-blue-500 text-white px-3 py-1 rounded-full text-sm font-bold">
+                              Lead Score: {business.lead_score}/100
+                            </div>
+                          )}
                         </div>
-                        <div className="text-3xl font-bold text-yellow-700 mb-1">{results.statistics.high_opportunity_count}</div>
-                        <div className="text-sm font-medium text-yellow-600">High Opportunity</div>
+
+                        <div className="flex items-center space-x-4 mb-4">
+                          <div className="flex items-center space-x-2">
+                            <Globe className="w-5 h-5 text-gray-400" />
+                            <a
+                              href={business.website}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 underline truncate max-w-xs"
+                            >
+                              {business.website || 'No website'}
+                            </a>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            {getWebsiteStatusIcon(business.website_status)}
+                            <span className="text-sm text-gray-600">
+                              {getWebsiteStatusText(business.website_status)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Premium Features & Actions */}
+                      {currentUser && results.payment_info.upgrade_price === 0 ? (
+                        <div className="flex flex-col space-y-2 lg:flex-row lg:space-y-0 lg:space-x-2">
+                          <button
+                            onClick={() => setReportUrl(business.website)}
+                            className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
+                          >
+                            <Zap className="w-4 h-4 mr-2" />
+                            Deep Dive
+                          </button>
+                          <button
+                            onClick={() => handleAddLead(business)}
+                            disabled={addingLead === business.place_id}
+                            className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all disabled:opacity-50"
+                          >
+                            <TrendingUp className="w-4 h-4 mr-2" />
+                            {addingLead === business.place_id ? 'Adding...' : 'Add to Funnel'}
+                          </button>
+                        </div>
+                      ) : !currentUser ? (
+                        <div className="flex flex-col space-y-2 lg:flex-row lg:space-y-0 lg:space-x-2">
+                          <button
+                            onClick={() => window.location.href = '/'}
+                            className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gray-400 hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
+                          >
+                            <Crown className="w-4 h-4 mr-2" />
+                            SEO Deep Dive - Premium
+                          </button>
+                          <button
+                            onClick={() => window.location.href = '/'}
+                            className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
+                          >
+                            <Crown className="w-4 h-4 mr-2" />
+                            Add to Funnel - Premium
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    {/* Business Insights - Now Available for All Users */}
+                    {business.business_insights && (
+                      <div className="mt-6 pt-6 border-t border-gray-200">
+                        <h5 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                          <Briefcase className="w-5 h-5 text-indigo-500" />
+                          Business Insights
+                        </h5>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                          <div className="bg-gray-50 p-3 rounded-lg">
+                            <p className="font-semibold text-gray-600">Digital Presence</p>
+                            <p className="font-bold text-gray-900 capitalize">{business.business_insights.digital_presence}</p>
+                          </div>
+                          <div className="bg-gray-50 p-3 rounded-lg">
+                            <p className="font-semibold text-gray-600">Opportunity Score</p>
+                            <p className="font-bold text-green-600">{business.business_insights.opportunity_score}/100</p>
+                          </div>
+                          <div className="bg-gray-50 p-3 rounded-lg">
+                            <p className="font-semibold text-gray-600">Business Size</p>
+                            <p className="font-bold text-gray-900 capitalize">{business.business_insights.business_size}</p>
+                          </div>
+                        </div>
+                        <div className="mt-4">
+                          <h6 className="font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                            <Lightbulb className="w-4 h-4 text-yellow-500" />
+                            Recommended Services
+                          </h6>
+                          <div className="flex flex-wrap gap-2">
+                            {business.business_insights.recommended_services.map((service, idx) => (
+                              <span key={idx} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
+                                {service}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
+                ))}
+              </div>
 
-                  {/* New Section: Market Analysis for Premium Users */}
-                  {currentUser && results.statistics.market_analysis && (
-                    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl p-6 mb-8 border-2 border-indigo-100 shadow-lg">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center">
-                          <TrendingUp className="w-6 h-6 text-white" />
-                        </div>
-                        <h3 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-                          Market Analysis
-                        </h3>
-                      </div>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                        <div className="text-center bg-white/50 rounded-xl p-4">
-                          <div className="text-2xl font-bold text-indigo-700">{results.statistics.market_analysis.opportunity_score}%</div>
-                          <div className="text-sm font-medium text-indigo-600">Market Opportunity</div>
-                        </div>
-                        <div className="text-center bg-white/50 rounded-xl p-4">
-                          <div className="text-2xl font-bold text-purple-700">{results.statistics.market_analysis.website_adoption_rate}%</div>
-                          <div className="text-sm font-medium text-purple-600">Website Adoption</div>
-                        </div>
-                        <div className="text-center bg-white/50 rounded-xl p-4">
-                          <div className="text-2xl font-bold text-pink-700">{results.statistics.market_analysis.average_rating.toFixed(1)}/5</div>
-                          <div className="text-sm font-medium text-pink-600">Average Rating</div>
-                        </div>
-                      </div>
-                      <div className="mt-4 space-y-2">
-                        {results.statistics.market_analysis.market_gaps.map((gap, i) => (
-                          <div key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                            <Lightbulb className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
-                            <span>{gap}</span>
+              {/* Market Analysis - Premium Feature */}
+              {results.statistics.market_analysis && currentUser ? (
+                <div className="bg-gradient-to-br from-purple-50 to-indigo-100 rounded-2xl p-8 shadow-lg">
+                  <h3 className="text-2xl font-bold text-purple-800 mb-6 flex items-center gap-3">
+                    <TrendingUp className="w-8 h-8 text-purple-600" />
+                    Market Analysis
+                  </h3>
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="bg-white/80 p-4 rounded-lg">
+                      <h4 className="font-semibold text-purple-700 mb-2">Market Saturation</h4>
+                      <p className="text-2xl font-bold text-purple-900 capitalize">{results.statistics.market_analysis.market_saturation}</p>
+                    </div>
+                    <div className="bg-white/80 p-4 rounded-lg">
+                      <h4 className="font-semibold text-purple-700 mb-2">Website Adoption</h4>
+                      <p className="text-2xl font-bold text-purple-900">{results.statistics.market_analysis.website_adoption_rate}%</p>
+                    </div>
+                    <div className="bg-white/80 p-4 rounded-lg">
+                      <h4 className="font-semibold text-purple-700 mb-2">Competition Level</h4>
+                      <p className="text-2xl font-bold text-purple-900 capitalize">{results.statistics.market_analysis.competition_level}</p>
+                    </div>
+                  </div>
+                  {results.statistics.market_analysis.market_gaps.length > 0 && (
+                    <div className="mt-6">
+                      <h4 className="font-semibold text-purple-700 mb-3">Market Opportunities</h4>
+                      <div className="space-y-2">
+                        {results.statistics.market_analysis.market_gaps.map((gap, index) => (
+                          <div key={index} className="bg-white/80 p-3 rounded-lg text-sm">
+                            <span className="text-purple-800">{gap}</span>
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-6 border border-purple-200 shadow-lg">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center">
-                          <Globe className="w-4 h-4 text-white" />
+                </div>
+              ) : !currentUser ? (
+                <div className="bg-gradient-to-br from-purple-50 to-indigo-100 rounded-2xl p-8 shadow-lg relative overflow-hidden">
+                  <h3 className="text-2xl font-bold text-purple-800 mb-6 flex items-center gap-3">
+                    <TrendingUp className="w-8 h-8 text-purple-600" />
+                    Market Analysis
+                  </h3>
+                  <div className="blur-sm">
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <div className="bg-white/80 p-4 rounded-lg">
+                        <h4 className="font-semibold text-purple-700 mb-2">Market Saturation</h4>
+                        <p className="text-2xl font-bold text-purple-900 capitalize">Medium</p>
+                      </div>
+                      <div className="bg-white/80 p-4 rounded-lg">
+                        <h4 className="font-semibold text-purple-700 mb-2">Website Adoption</h4>
+                        <p className="text-2xl font-bold text-purple-900">45%</p>
+                      </div>
+                      <div className="bg-white/80 p-4 rounded-lg">
+                        <h4 className="font-semibold text-purple-700 mb-2">Competition Level</h4>
+                        <p className="text-2xl font-bold text-purple-900 capitalize">Low</p>
+                      </div>
+                    </div>
+                    <div className="mt-6">
+                      <h4 className="font-semibold text-purple-700 mb-3">Market Opportunities</h4>
+                      <div className="space-y-2">
+                        <div className="bg-white/80 p-3 rounded-lg text-sm">
+                          <span className="text-purple-800">Low website adoption - high opportunity for web development</span>
                         </div>
-                        <div className="text-2xl font-bold text-purple-700">
-                          {results.statistics.website_percentage}%
+                        <div className="bg-white/800 p-3 rounded-lg text-sm">
+                          <span className="text-purple-800">Below-average ratings - reputation management opportunities</span>
                         </div>
                       </div>
-                      <div className="text-sm font-medium text-purple-600">Have websites</div>
                     </div>
-                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-200 shadow-lg">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
-                          <CheckCircle className="w-4 h-4 text-white" />
-                        </div>
-                        <div className="text-2xl font-bold text-green-700">
-                          {results.statistics.accessible_percentage}%
-                        </div>
-                      </div>
-                      <div className="text-sm font-medium text-green-600">Websites are accessible</div>
-                    </div>
+                  </div>
+                  <div className="absolute inset-0 bg-black/10 flex items-center justify-center">
+                    <button
+                      onClick={() => window.location.href = '/'}
+                      className="bg-white text-purple-700 px-6 py-3 rounded-full font-bold shadow-lg hover:shadow-xl transition-all flex items-center gap-2"
+                    >
+                      <Crown className="w-5 h-5" />
+                      Upgrade for Market Analysis
+                    </button>
                   </div>
                 </div>
-
-                {/* Business List */}
-                <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-white/20">
-                  <div className="flex items-center space-x-3 mb-6">
-                    <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center">
-                      <Globe className="w-6 h-6 text-white" />
-                    </div>
-                    <h3 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-                      Business Details
-                    </h3>
-                  </div>
-                  <div className="space-y-6">
-                    {results.businesses.map((business) => (
-                      <div key={business.place_id} className="bg-gradient-to-r from-white to-gray-50 border-2 border-gray-100 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-200 hover:border-blue-200">
-                        <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-4">
-                          <div className="flex-1">
-                            <h4 className="text-xl font-bold text-gray-900 mb-2">{business.name}</h4>
-                            <p className="text-gray-600 flex items-center">
-                              <MapPin className="w-4 h-4 mr-2 text-gray-400" />
-                              {business.address}
-                            </p>
-                          </div>
-                          <div className="mt-4 md:mt-0 md:text-right">
-                            <div className="flex items-center justify-start md:justify-end space-x-2 mb-1">
-                              <div className="flex items-center">
-                                {[...Array(5)].map((_, i) => (
-                                  <div key={i} className={`w-4 h-4 ${i < business.rating ? 'text-yellow-400' : 'text-gray-300'}`}>
-                                    ⭐
-                                  </div>
-                                ))}
-                              </div>
-                              <span className="text-sm font-medium text-gray-700">{business.rating}/5</span>
-                            </div>
-                            <div className="text-sm text-gray-500">({business.review_count} reviews)</div>
-                          </div>
-                        </div>
-                        
-                        {/* Lead Score for Premium Users */}
-                        {currentUser && business.lead_score !== undefined && (
-                          <div className="my-4">
-                            <div className="flex justify-between items-center mb-1">
-                              <span className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                                <Zap className="w-4 h-4 text-yellow-500" />
-                                Lead Score
-                              </span>
-                              <span className="text-sm font-bold text-blue-600">{business.lead_score.toFixed(0)} / 100</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2.5">
-                              <div 
-                                className="bg-gradient-to-r from-yellow-400 to-orange-500 h-2.5 rounded-full" 
-                                style={{ width: `${business.lead_score}%` }}
-                              ></div>
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                          <div className="space-y-3">
-                            <div className="flex items-center space-x-3">
-                              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                <span className="text-blue-600 text-sm">📞</span>
-                              </div>
-                              <div>
-                                <p className="text-sm font-medium text-gray-700">Phone</p>
-                                <p className="text-gray-900">{business.phone || 'Not available'}</p>
-                              </div>
-                            </div>
-                            <div className="flex items-start space-x-3">
-                              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                                <Globe className="w-4 h-4 text-green-600" />
-                              </div>
-                              <div className="flex-1">
-                                <p className="text-sm font-medium text-gray-700">Website</p>
-                                {business.website !== 'N/A' ? (
-                                  <a 
-                                    href={business.website} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer" 
-                                    className="text-blue-600 hover:text-blue-800 hover:underline break-all text-sm"
-                                  >
-                                    {business.website}
-                                  </a>
-                                ) : (
-                                  <p className="text-gray-500 text-sm">No website found</p>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-start lg:justify-end">
-                            <div className="bg-white rounded-2xl px-4 py-3 shadow-md border border-gray-200">
-                              <div className="flex items-center space-x-3">
-                                {getWebsiteStatusIcon(business.website_status)}
-                                <div>
-                                  <p className="text-sm font-medium text-gray-700">Website Status</p>
-                                  <p className="text-sm text-gray-600">
-                                    {getWebsiteStatusText(business.website_status)}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Premium Features & Actions */}
-                        {currentUser && results.payment_info.upgrade_price === 0 && (
-                          <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
-                            <button
-                              onClick={() => setReportUrl(business.website)}
-                              className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
-                            >
-                              <Zap className="w-4 h-4 mr-1.5" />
-                              Deep Dive
-                            </button>
-                             <button
-                              onClick={() => handleAddLead(business)}
-                              disabled={addingLead === business.place_id}
-                              className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all disabled:opacity-50"
-                            >
-                              <TrendingUp className="w-4 h-4 mr-1.5" />
-                              {addingLead === business.place_id ? 'Adding...' : 'Add to Funnel'}
-                            </button>
-                          </div>
-                        )}
-
-                        {/* Premium Business Insights */}
-                        {currentUser && business.business_insights && (
-                          <div className="mt-6 pt-6 border-t border-gray-200/80">
-                            <h5 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                              <Briefcase className="w-5 h-5 text-indigo-500" />
-                              Premium Insights
-                            </h5>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                              <div className="bg-gray-100/70 p-3 rounded-lg">
-                                <p className="font-semibold text-gray-600">Digital Presence</p>
-                                <p className="font-bold text-gray-900 capitalize">{business.business_insights.digital_presence}</p>
-                              </div>
-                              <div className="bg-gray-100/70 p-3 rounded-lg">
-                                <p className="font-semibold text-gray-600">Opportunity Score</p>
-                                <p className="font-bold text-green-600">{business.business_insights.opportunity_score}/100</p>
-                              </div>
-                              <div className="bg-gray-100/70 p-3 rounded-lg">
-                                <p className="font-semibold text-gray-600">Business Size</p>
-                                <p className="font-bold text-gray-900 capitalize">{business.business_insights.business_size}</p>
-                              </div>
-                            </div>
-                             <div className="mt-4">
-                                <h6 className="font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                                  <Lightbulb className="w-4 h-4 text-yellow-500" />
-                                  Recommended Services
-                                </h6>
-                                <div className="flex flex-wrap gap-2">
-                                  {business.business_insights.recommended_services.map(service => (
-                                    <span key={service} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
-                                      {service}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-
-        {activeTab === 'funnel' && currentUser && (
-          <LeadFunnel />
-        )}
-      </div>
-
-      {/* Payment Modal */}
-      {showPaymentModal && (
-        <PaymentModal
-          onClose={() => setShowPaymentModal(false)}
-          onPaymentSuccess={handlePaymentSuccess}
-        />
-      )}
-
-      {/* Auth Modal */}
-      {showAuthModal && (
-        <AuthModal
-          onClose={() => setShowAuthModal(false)}
-          onAuthSuccess={handleAuthSuccess}
-        />
-      )}
+              ) : null}
+            </div>
+          )}
+        </div>
+      </main>
 
       {/* Website Report Modal */}
       {reportUrl && (
@@ -1097,7 +779,6 @@ export default function BusinessChecker() {
           onClose={() => setReportUrl(null)}
         />
       )}
-      </div>
-    </>
+    </div>
   );
 }

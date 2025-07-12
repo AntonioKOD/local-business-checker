@@ -4,27 +4,24 @@ import React, { useState, useEffect } from 'react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy } from '@dnd-kit/sortable';
 // Define Lead interface locally since payload types are not available
-interface BusinessData {
-  name: string;
-  address: string;
-  phone?: string;
-  website?: string;
-  rating: number;
-  review_count: number;
-}
-
 interface Lead {
   id: string;
-  businessName: string;
-  placeId: string;
-  status: 'new' | 'contacted' | 'discussion' | 'proposal' | 'won' | 'lost';
+  name: string;
+  email: string;
+  company?: string;
+  phone?: string;
+  businessType?: string;
+  currentChallenges?: Array<{ challenge: string }>;
+  budget?: string;
+  timeline?: string;
+  source?: string;
   leadScore: number;
-  businessData: BusinessData;
-  contactedDate?: string;
+  priority: 'high' | 'medium' | 'low';
+  funnelStep?: number;
+  status: 'new' | 'contacted' | 'qualified' | 'proposal-sent' | 'negotiating' | 'closed-won' | 'closed-lost' | 'unqualified';
   notes?: string;
-  isWatched?: boolean;
-  lastScanned?: string;
-  owner: {
+  submittedAt: string;
+  owner?: {
     id: string;
     [key: string]: unknown;
   };
@@ -38,10 +35,12 @@ import { Search, SlidersHorizontal } from 'lucide-react';
 const initialColumns: Record<Lead['status'], ColumnData> = {
   'new': { id: 'new', title: 'New Leads', items: [] },
   'contacted': { id: 'contacted', title: 'Contacted', items: [] },
-  'discussion': { id: 'discussion', title: 'In Discussion', items: [] },
-  'proposal': { id: 'proposal', title: 'Proposal Sent', items: [] },
-  'won': { id: 'won', title: 'Won', items: [] },
-  'lost': { id: 'lost', title: 'Lost', items: [] },
+  'qualified': { id: 'qualified', title: 'Qualified', items: [] },
+  'proposal-sent': { id: 'proposal-sent', title: 'Proposal Sent', items: [] },
+  'negotiating': { id: 'negotiating', title: 'Negotiating', items: [] },
+  'closed-won': { id: 'closed-won', title: 'Closed Won', items: [] },
+  'closed-lost': { id: 'closed-lost', title: 'Closed Lost', items: [] },
+  'unqualified': { id: 'unqualified', title: 'Unqualified', items: [] },
 };
 
 type ColumnData = {
@@ -73,7 +72,9 @@ const LeadFunnel = () => {
 
     for (const columnId in newColumns) {
       newColumns[columnId].items = newColumns[columnId].items.filter((lead: Lead) => {
-        const searchMatch = lead.businessName.toLowerCase().includes(searchTerm.toLowerCase());
+        const searchMatch = lead.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                           (lead.company && lead.company.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                           lead.email.toLowerCase().includes(searchTerm.toLowerCase());
         const leadScoreMatch = (lead.leadScore || 0) >= minLeadScore;
         return searchMatch && leadScoreMatch;
       });

@@ -2,6 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Line clamp utilities */
+.line-clamp-1 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.line-clamp-3 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.line-clamp-4 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -272,4 +301,549 @@ body {
     transform: translate(-50%, -50%) scale(2);
     opacity: 0;
   }
+}
+
+/* Tiptap Editor Styling - Ensure all text is black and visible */
+.tiptap {
+  color: #000000 !important;
+  font-family: inherit;
+  line-height: 1.6;
+}
+
+.tiptap p {
+  color: #000000 !important;
+  margin: 0.5em 0;
+}
+
+.tiptap h1,
+.tiptap h2,
+.tiptap h3,
+.tiptap h4,
+.tiptap h5,
+.tiptap h6 {
+  color: #000000 !important;
+  font-weight: 600;
+  margin: 1em 0 0.5em 0;
+}
+
+.tiptap h1 {
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+}
+
+.tiptap h2 {
+  font-size: 1.5rem;
+  line-height: 2rem;
+}
+
+.tiptap h3 {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+}
+
+.tiptap strong,
+.tiptap b {
+  color: #000000 !important;
+  font-weight: 600;
+}
+
+.tiptap em,
+.tiptap i {
+  color: #000000 !important;
+  font-style: italic;
+}
+
+.tiptap u {
+  color: #000000 !important;
+  text-decoration: underline;
+}
+
+.tiptap code {
+  color: #000000 !important;
+  background-color: #f3f4f6;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.875em;
+}
+
+.tiptap pre {
+  color: #000000 !important;
+  background-color: #f3f4f6;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 1em 0;
+}
+
+.tiptap pre code {
+  background-color: transparent;
+  padding: 0;
+}
+
+.tiptap blockquote {
+  color: #000000 !important;
+  border-left: 4px solid #e5e7eb;
+  padding-left: 1rem;
+  margin: 1em 0;
+  font-style: italic;
+}
+
+.tiptap ul,
+.tiptap ol {
+  color: #000000 !important;
+  margin: 0.5em 0;
+  padding-left: 1.5rem;
+}
+
+.tiptap li {
+  color: #000000 !important;
+  margin: 0.25em 0;
+}
+
+.tiptap a {
+  color: #2563eb !important;
+  text-decoration: underline;
+}
+
+.tiptap a:hover {
+  color: #1d4ed8 !important;
+}
+
+.tiptap img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 0.5em 0;
+}
+
+.tiptap table {
+  color: #000000 !important;
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1em 0;
+}
+
+.tiptap th,
+.tiptap td {
+  color: #000000 !important;
+  border: 1px solid #e5e7eb;
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.tiptap th {
+  background-color: #f9fafb;
+  font-weight: 600;
+}
+
+/* Placeholder text styling */
+.tiptap .is-editor-empty:first-child::before {
+  color: #9ca3af !important;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Focus state for better UX */
+.tiptap:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Ensure text selection is visible */
+.tiptap ::selection {
+  background-color: #3b82f6;
+  color: #ffffff;
+}
+
+.tiptap ::-moz-selection {
+  background-color: #3b82f6;
+  color: #ffffff;
+}
+
+/* Form Fields and Input Styling - Ensure all text is black and visible */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="tel"],
+input[type="url"],
+input[type="search"],
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+input[type="month"],
+input[type="week"],
+textarea,
+select {
+  color: #000000 !important;
+  background-color: #ffffff !important;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-family: inherit;
+}
+
+/* Input focus states */
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+input[type="tel"]:focus,
+input[type="url"]:focus,
+input[type="search"]:focus,
+input[type="date"]:focus,
+input[type="time"]:focus,
+input[type="datetime-local"]:focus,
+input[type="month"]:focus,
+input[type="week"]:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  color: #000000 !important;
+}
+
+/* Placeholder text styling */
+input::placeholder,
+textarea::placeholder {
+  color: #9ca3af !important;
+  opacity: 1;
+}
+
+/* Select dropdown styling */
+select option {
+  color: #000000 !important;
+  background-color: #ffffff !important;
+}
+
+/* Textarea specific styling */
+textarea {
+  resize: vertical;
+  min-height: 2.5rem;
+}
+
+/* Label styling */
+label {
+  color: #000000 !important;
+  font-weight: 500;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  margin-bottom: 0.25rem;
+  display: block;
+}
+
+/* Form group spacing */
+.form-group {
+  margin-bottom: 1rem;
+}
+
+/* Checkbox and radio button styling */
+input[type="checkbox"],
+input[type="radio"] {
+  color: #000000 !important;
+  accent-color: #3b82f6;
+}
+
+/* Button styling */
+button,
+.btn,
+input[type="submit"],
+input[type="button"] {
+  color: #ffffff !important;
+  background-color: #3b82f6;
+  border: 1px solid #3b82f6;
+  border-radius: 0.375rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+button:hover,
+.btn:hover,
+input[type="submit"]:hover,
+input[type="button"]:hover {
+  background-color: #2563eb;
+  border-color: #2563eb;
+}
+
+/* Secondary button styling */
+.btn-secondary {
+  color: #374151 !important;
+  background-color: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.btn-secondary:hover {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+/* Modal and overlay text */
+.modal,
+.overlay,
+.dialog {
+  color: #000000 !important;
+}
+
+.modal h1,
+.modal h2,
+.modal h3,
+.modal h4,
+.modal h5,
+.modal h6 {
+  color: #000000 !important;
+}
+
+.modal p,
+.modal span,
+.modal div {
+  color: #000000 !important;
+}
+
+/* Card and container text */
+.card,
+.container,
+.section {
+  color: #000000 !important;
+}
+
+.card h1,
+.card h2,
+.card h3,
+.card h4,
+.card h5,
+.card h6 {
+  color: #000000 !important;
+}
+
+.card p,
+.card span,
+.card div {
+  color: #000000 !important;
+}
+
+/* Navigation and header text */
+nav,
+header,
+.navbar {
+  color: #000000 !important;
+}
+
+nav a,
+header a,
+.navbar a {
+  color: #000000 !important;
+}
+
+/* Footer text */
+footer {
+  color: #000000 !important;
+}
+
+footer a {
+  color: #000000 !important;
+}
+
+/* List text */
+ul,
+ol {
+  color: #000000 !important;
+}
+
+ul li,
+ol li {
+  color: #000000 !important;
+}
+
+/* Table text */
+table {
+  color: #000000 !important;
+}
+
+table th,
+table td {
+  color: #000000 !important;
+}
+
+/* Link styling */
+a {
+  color: #2563eb !important;
+  text-decoration: underline;
+}
+
+a:hover {
+  color: #1d4ed8 !important;
+}
+
+/* Paragraph and text elements */
+p,
+span,
+div {
+  color: #000000 !important;
+}
+
+/* Heading elements */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: #000000 !important;
+}
+
+/* Strong and emphasis */
+strong,
+b {
+  color: #000000 !important;
+  font-weight: 600;
+}
+
+em,
+i {
+  color: #000000 !important;
+  font-style: italic;
+}
+
+/* Code and pre elements */
+code {
+  color: #000000 !important;
+  background-color: #f3f4f6;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.875em;
+}
+
+pre {
+  color: #000000 !important;
+  background-color: #f3f4f6;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 1em 0;
+}
+
+/* Blockquote styling */
+blockquote {
+  color: #000000 !important;
+  border-left: 4px solid #e5e7eb;
+  padding-left: 1rem;
+  margin: 1em 0;
+  font-style: italic;
+}
+
+/* Ensure all text in the application is visible */
+* {
+  color: inherit;
+}
+
+/* Override any light gray text */
+.text-gray-300,
+.text-gray-400,
+.text-gray-500 {
+  color: #000000 !important;
+}
+
+/* Ensure form validation messages are visible */
+.error,
+.error-message,
+.validation-error {
+  color: #dc2626 !important;
+}
+
+.success,
+.success-message {
+  color: #059669 !important;
+}
+
+.warning,
+.warning-message {
+  color: #d97706 !important;
+}
+
+.info,
+.info-message {
+  color: #2563eb !important;
+}
+
+/* Modern UI Enhancements */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.gradient-border {
+  background: linear-gradient(45deg, #3b82f6, #8b5cf6, #06b6d4);
+  padding: 1px;
+  border-radius: 0.75rem;
+}
+
+.gradient-border > * {
+  background: white;
+  border-radius: 0.75rem;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+}
+
+/* Modern focus states */
+.focus-ring:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Hover animations */
+.hover-lift {
+  transition: transform 0.2s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+/* Loading animations */
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
 }

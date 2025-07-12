@@ -55,13 +55,13 @@ export async function POST(request: NextRequest) {
     if (customer.default_source || customer.invoice_settings?.default_payment_method) {
       // Create product and price
       const product = await stripe.products.create({
-        name: 'BusinessChecker Premium',
+        name: 'Client Compass Premium',
         description: 'Unlimited business searches and website analysis',
       });
 
       const price = await stripe.prices.create({
         currency: 'usd',
-                  unit_amount: 700, // $7.00 in cents
+                  unit_amount: 2000, // $20.00 in cents
         recurring: {
           interval: 'month',
         },

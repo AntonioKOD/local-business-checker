@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { BusinessChecker } from '@/lib/business-checker';
+import { ClientCompass } from '@/lib/business-checker';
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const checker = new BusinessChecker();
+    const checker = new ClientCompass();
     const result = await checker.checkWebsiteStatus(url);
 
     return NextResponse.json(result);

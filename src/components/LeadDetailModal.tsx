@@ -3,27 +3,24 @@
 import React, { useState } from 'react';
 import { X, Building, Phone, Globe, Star, Users, Briefcase, TrendingUp, Save, Eye } from 'lucide-react';
 
-interface BusinessData {
-  name: string;
-  address: string;
-  phone?: string;
-  website?: string;
-  rating: number;
-  review_count: number;
-}
-
 interface Lead {
   id: string;
-  businessName: string;
-  placeId: string;
-  status: 'new' | 'contacted' | 'discussion' | 'proposal' | 'won' | 'lost';
+  name: string;
+  email: string;
+  company?: string;
+  phone?: string;
+  businessType?: string;
+  currentChallenges?: Array<{ challenge: string }>;
+  budget?: string;
+  timeline?: string;
+  source?: string;
   leadScore: number;
-  businessData: BusinessData;
-  contactedDate?: string;
+  priority: 'high' | 'medium' | 'low';
+  funnelStep?: number;
+  status: 'new' | 'contacted' | 'qualified' | 'proposal-sent' | 'negotiating' | 'closed-won' | 'closed-lost' | 'unqualified';
   notes?: string;
-  isWatched?: boolean;
-  lastScanned?: string;
-  owner: {
+  submittedAt: string;
+  owner?: {
     id: string;
     [key: string]: unknown;
   };
@@ -36,12 +33,9 @@ interface LeadDetailModalProps {
 }
 
 const LeadDetailModal: React.FC<LeadDetailModalProps> = ({ lead, onClose, onUpdate }) => {
-  const business = lead.businessData;
   const [notes, setNotes] = useState(lead.notes || '');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  if (!business) return null;
 
   const handleToggleWatch = async () => {
     // Optimistic update
@@ -99,8 +93,8 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({ lead, onClose, onUpda
               <Briefcase className="w-6 h-6 text-blue-600" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-800">{lead.businessName}</h2>
-              <p className="text-sm text-gray-500">{business.address}</p>
+              <h2 className="text-xl font-bold text-gray-800">{lead.name}</h2>
+              <p className="text-sm text-gray-500">{lead.company || 'No company'}</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100">
@@ -111,15 +105,19 @@ const LeadDetailModal: React.FC<LeadDetailModalProps> = ({ lead, onClose, onUpda
         <main className="p-6 overflow-y-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">Business Details</h3>
-              <div className="flex items-center text-sm"><Building className="w-4 h-4 mr-3 text-gray-500" /><span>{business.name}</span></div>
-              <div className="flex items-center text-sm"><Phone className="w-4 h-4 mr-3 text-gray-500" /><a href={`tel:${business.phone}`} className="hover:underline">{business.phone || 'N/A'}</a></div>
-              <div className="flex items-center text-sm"><Globe className="w-4 h-4 mr-3 text-gray-500" /><a href={business.website} target="_blank" rel="noopener noreferrer" className="hover:underline truncate">{business.website || 'N/A'}</a></div>
-              <div className="flex items-center text-sm"><Star className="w-4 h-4 mr-3 text-gray-500" /><span>{business.rating} stars ({business.review_count} reviews)</span></div>
+              <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">Lead Details</h3>
+              <div className="flex items-center text-sm"><Building className="w-4 h-4 mr-3 text-gray-500" /><span>{lead.name}</span></div>
+              <div className="flex items-center text-sm"><Phone className="w-4 h-4 mr-3 text-gray-500" /><a href={`tel:${lead.phone}`} className="hover:underline">{lead.phone || 'N/A'}</a></div>
+              <div className="flex items-center text-sm"><Globe className="w-4 h-4 mr-3 text-gray-500" /><a href={`mailto:${lead.email}`} className="hover:underline truncate">{lead.email}</a></div>
+              <div className="flex items-center text-sm">
+                <Star className="w-4 h-4 mr-3 text-gray-500" />
+                <span>Business Type: {lead.businessType || 'N/A'}</span>
+              </div>
             </div>
             <div className="space-y-4">
                <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">Lead Info</h3>
                <div className="flex items-center text-sm"><TrendingUp className="w-4 h-4 mr-3 text-gray-500" /><span className="font-medium">Lead Score: {lead.leadScore}</span></div>
+               <div className="flex items-center text-sm"><Users className="w-4 h-4 mr-3 text-gray-500" /><span className="capitalize">Priority: {lead.priority}</span></div>
                <div className="flex items-center text-sm"><Users className="w-4 h-4 mr-3 text-gray-500" /><span className="capitalize">Status: {lead.status}</span></div>
                <div className="flex items-center justify-between pt-2">
                   <div className="flex items-center text-sm">

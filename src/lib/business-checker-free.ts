@@ -14,471 +14,589 @@ export interface Business {
     lat: number;
     lng: number;
   };
+  lead_score?: number;
+  business_insights?: BusinessInsights;
+  emails?: string[];
+  social_media?: {
+    facebook?: string[];
+    instagram?: string[];
+    linkedin?: string[];
+    twitter?: string[];
+    youtube?: string[];
+    yelp?: string[];
+  };
+}
+
+export interface BusinessInsights {
+  estimated_age: string;
+  business_size: 'small' | 'medium' | 'large';
+  digital_presence: 'strong' | 'moderate' | 'weak' | 'none';
+  opportunity_score: number;
+  recommended_services: string[];
+  last_updated?: string;
 }
 
 export interface WebsiteStatus {
   accessible: boolean;
-  status_code: number;
-  error?: string;
-  load_time?: number;
-  has_ssl?: boolean;
-  redirects?: number;
+  status_code?: number;
+  response_time?: number;
+  has_contact_form?: boolean;
+  has_phone?: boolean;
+  has_email?: boolean;
+  ssl_certificate?: boolean;
+  mobile_friendly?: boolean;
+  page_speed_score?: number;
+  last_checked?: string;
 }
 
-export interface SearchResults {
-  businesses: Business[];
-  statistics: {
-    total_businesses: number;
-    businesses_with_websites: number;
-    accessible_websites: number;
-    no_website_count: number;
-    website_percentage: number;
-    accessible_percentage: number;
-  };
-  payment_info: {
-    is_free_user: boolean;
-    total_found: number;
-    showing: number;
-    remaining: number;
-    upgrade_price: number;
-    searches_remaining?: number | null;
-  };
+export interface SearchFilters {
+  min_rating?: number;
+  has_website?: boolean;
+  has_phone?: boolean;
+  min_reviews?: number;
+  max_results?: number;
+  business_types?: string[];
+  exclude_chains?: boolean;
 }
 
-export class FreeBusinessChecker {
-  private foursquareApiKey: string;
+export class FreeClientCompass {
+  private readonly GMAPS_EXTRACTOR_TOKEN = '1zZOSeqQTBs3I62Ruj0oSyXWCQqfhtC3XGOh55AI25O5xbVK';
+  private readonly GMAPS_EXTRACTOR_BASE_URL = 'https://cloud.gmapsextractor.com/api/v2';
 
   constructor() {
-    this.foursquareApiKey = process.env.FOURSQUARE_API_KEY || '';
+    console.log('FreeClientCompass initialized with GMaps Extractor API');
+    console.log('🌐 API Base URL:', this.GMAPS_EXTRACTOR_BASE_URL);
   }
 
-  // Method 1: Using OpenStreetMap Nominatim API (Completely Free)
-  async searchBusinessesNominatim(query: string, location: string, radius: number = 15000, maxResults: number = 10): Promise<Business[]> {
+  // Test API connection and token validity
+  async testAPIConnection(): Promise<boolean> {
     try {
-      console.log(`Searching for '${query}' in '${location}' using Nominatim...`);
+      console.log('🧪 Testing GMaps Extractor API connection...');
       
-      // First, geocode the location
-      const geocodeUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}&limit=1`;
-      console.log('Geocoding URL:', geocodeUrl);
-      
-      const geocodeResponse = await fetch(geocodeUrl, {
-        headers: {
-          'User-Agent': 'BusinessChecker/1.0 (business search application)'
-        }
-      });
-      
-      if (!geocodeResponse.ok) {
-        throw new Error(`Geocoding failed: ${geocodeResponse.status}`);
-      }
-      
-      const geocodeData = await geocodeResponse.json();
-      if (geocodeData.length === 0) {
-        console.log('Location not found in geocoding');
-        return [];
-      }
-      
-      const lat = parseFloat(geocodeData[0].lat);
-      const lng = parseFloat(geocodeData[0].lon);
-      console.log(`Geocoded to: ${lat}, ${lng}`);
-      
-      // Search for businesses near the location
-      const searchTerms = [
-        `${query} ${location}`,
-        `${query} near ${location}`,
-        query
+      // Try different endpoint formats
+      const endpoints = [
+        '/search',
+        '/places/search',
+        '/google/search',
+        '/v2/search'
       ];
       
-      const allBusinesses: Business[] = [];
-      const seenNames = new Set<string>();
-      
-      for (const searchTerm of searchTerms) {
-        if (allBusinesses.length >= maxResults) break;
-        
+      for (const endpoint of endpoints) {
         try {
-          const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchTerm)}&limit=${Math.min(maxResults * 2, 50)}&extratags=1&addressdetails=1`;
-          console.log('Search URL:', searchUrl);
+          console.log(`🧪 Trying endpoint: ${endpoint}`);
           
-          const searchResponse = await fetch(searchUrl, {
-            headers: {
-              'User-Agent': 'BusinessChecker/1.0 (business search application)'
-            }
+          const params = new URLSearchParams({
+            q: 'test',
+            location: 'New York',
+            page: '1'
           });
           
-          if (!searchResponse.ok) {
-            console.warn(`Search failed for "${searchTerm}": ${searchResponse.status}`);
-            continue;
+          const headers: Record<string, string> = {};
+          headers['Authorization'] = `Bearer ${this.GMAPS_EXTRACTOR_TOKEN}`;
+          headers['X-API-Key'] = this.GMAPS_EXTRACTOR_TOKEN;
+          
+          const response = await fetch(`${this.GMAPS_EXTRACTOR_BASE_URL}${endpoint}?${params.toString()}`, {
+            method: 'GET',
+            headers
+          });
+
+          console.log(`🧪 Endpoint ${endpoint} response status:`, response.status);
+          
+          if (response.ok) {
+            console.log(`✅ API connection successful with endpoint: ${endpoint}`);
+            return true;
+          } else {
+            const errorText = await response.text();
+            console.log(`❌ Endpoint ${endpoint} failed:`, response.status, errorText);
           }
-          
-          const searchData = await searchResponse.json();
-          console.log(`Found ${searchData.length} results for "${searchTerm}"`);
-          
-          for (const place of searchData) {
-            if (allBusinesses.length >= maxResults) break;
-            
-            // Skip if we've already seen this business name
-            const businessName = place.display_name?.split(',')[0] || place.name || 'Unknown Business';
-            if (seenNames.has(businessName.toLowerCase())) continue;
-            
-            // Calculate distance from center
-            const placeLat = parseFloat(place.lat);
-            const placeLng = parseFloat(place.lon);
-            const distance = this.calculateDistance(lat, lng, placeLat, placeLng);
-            
-            // Skip if too far from search center
-            if (distance > radius / 1000) continue; // Convert meters to km
-            
-            // Extract business information
-            const business: Business = {
-              name: businessName,
-              place_id: `osm_${place.osm_type}_${place.osm_id}`,
-              rating: 'N/A',
-              address: place.display_name || 'N/A',
-              types: this.extractTypes(place),
-              price_level: 'N/A',
-              website: place.extratags?.website || place.extratags?.['contact:website'] || undefined,
-              phone: place.extratags?.phone || place.extratags?.['contact:phone'] || undefined,
-              total_ratings: 'N/A',
-              hours: this.extractHours(place.extratags),
-              location: {
-                lat: placeLat,
-                lng: placeLng
-              }
-            };
-            
-            allBusinesses.push(business);
-            seenNames.add(businessName.toLowerCase());
-          }
-          
-          // Add delay between requests to be respectful
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
         } catch (error) {
-          console.warn(`Error searching for "${searchTerm}":`, error);
+          console.log(`❌ Endpoint ${endpoint} error:`, error);
         }
       }
       
-      console.log(`Total businesses found: ${allBusinesses.length}`);
-      return allBusinesses;
+      console.log('❌ All endpoints failed');
+      return false;
+    } catch (error) {
+      console.error('❌ API connection test failed:', error);
+      return false;
+    }
+  }
+
+  async searchBusinesses(
+    query: string, 
+    location: string, 
+    filters?: SearchFilters
+  ): Promise<Business[]> {
+    try {
+      console.log(`🔍 Searching for "${query}" in ${location}...`);
+      
+      // Use only GMaps Extractor API
+      const businesses = await this.searchWithGMapsExtractor(query, location, filters);
+      console.log(`✅ Found ${businesses.length} businesses with GMaps Extractor API`);
+      return businesses;
       
     } catch (error) {
-      console.error('Error searching businesses with Nominatim:', error);
-      return [];
+      console.error('❌ Error in searchBusinesses:', error);
+      throw error;
     }
   }
 
-  // Helper method to calculate distance between two points
-  private calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
-    const R = 6371; // Earth's radius in km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLng = (lng2 - lng1) * Math.PI / 180;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLng/2) * Math.sin(dLng/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
-  }
-
-  // Extract business types from OSM data
-  private extractTypes(place: { type?: string; class?: string; extratags?: Record<string, string> }): string[] {
-    const types: string[] = [];
-    
-    if (place.type) types.push(place.type);
-    if (place.class) types.push(place.class);
-    
-    // Extract from extra tags
-    if (place.extratags) {
-      if (place.extratags.amenity) types.push(place.extratags.amenity);
-      if (place.extratags.shop) types.push(place.extratags.shop);
-      if (place.extratags.cuisine) types.push(place.extratags.cuisine);
-      if (place.extratags.tourism) types.push(place.extratags.tourism);
-    }
-    
-    return types.filter((type, index, self) => self.indexOf(type) === index); // Remove duplicates
-  }
-
-  // Extract opening hours from OSM data
-  private extractHours(extratags: Record<string, string> | undefined): string[] {
-    if (!extratags) return [];
-    
-    const hours: string[] = [];
-    if (extratags.opening_hours) {
-      hours.push(extratags.opening_hours);
-    }
-    
-    return hours;
-  }
-
-  // Method 2: Using Foursquare Places API (fallback if API credits available)
-  async searchBusinessesFoursquare(query: string, location: string, radius: number = 15000, maxResults: number = 10): Promise<Business[]> {
-    if (!this.foursquareApiKey) {
-      console.warn('Foursquare API key not configured');
-      return [];
-    }
-
+  private async searchWithGMapsExtractor(
+    query: string, 
+    location: string,
+    filters?: SearchFilters
+  ): Promise<Business[]> {
     try {
-      // For radius support, we need to use ll (lat,lng) + radius
-      // First, try to get coordinates using a simple geocoding approach
-      let useRadius = false;
-      let lat: number | undefined, lng: number | undefined;
-
-      // Try to geocode the location using a simple approach
-      try {
-        const geocodeResponse = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}&limit=1`, {
-          headers: {
-            'User-Agent': 'BusinessChecker/1.0 (business search application)'
-          }
-        });
-        if (geocodeResponse.ok) {
-          const geocodeData = await geocodeResponse.json();
-          if (geocodeData.length > 0) {
-            lat = parseFloat(geocodeData[0].lat);
-            lng = parseFloat(geocodeData[0].lon);
-            useRadius = true;
-            console.log(`Geocoded ${location} to ${lat},${lng}`);
-          }
-        }
-      } catch {
-        console.log('Geocoding failed, using location name only');
-      }
-
-      const searchUrl = new URL('https://api.foursquare.com/v3/places/search');
-      searchUrl.searchParams.set('query', query);
+      // Get coordinates for the location
+      const ll = await this.getLLFromLocation(location);
       
-      if (useRadius && lat && lng) {
-        // Use coordinates with radius for precise control
-        searchUrl.searchParams.set('ll', `${lat},${lng}`);
-        searchUrl.searchParams.set('radius', Math.min(radius, 50000).toString()); // Max 50km
-        console.log(`Using radius search: ${radius}m around ${lat},${lng}`);
-      } else {
-        // Fallback to location name only
-        searchUrl.searchParams.set('near', location);
-        console.log(`Using location name search: ${location}`);
-      }
+      // Use the exact format from the working example
+      const requestBody: any = {
+        q: query,
+        page: 1,
+        ll: ll,
+        hl: 'en',
+        gl: 'us',
+        extra: true
+      };
+
+      console.log('📡 Making POST request to GMaps Extractor API...');
+      console.log('🔍 Request body:', JSON.stringify(requestBody, null, 2));
+      console.log('🔑 Using token:', this.GMAPS_EXTRACTOR_TOKEN.substring(0, 10) + '...');
+      console.log('🌐 API URL:', `${this.GMAPS_EXTRACTOR_BASE_URL}/search`);
       
-      searchUrl.searchParams.set('limit', Math.min(maxResults, 50).toString());
-      searchUrl.searchParams.set('fields', 'fsq_id,name,location,categories,rating,price,tel,website,hours');
-
-      console.log('Foursquare API Request URL:', searchUrl.toString());
-
-      const searchResponse = await fetch(searchUrl.toString(), {
+      const response = await fetch(`${this.GMAPS_EXTRACTOR_BASE_URL}/search`, {
+        method: 'POST',
         headers: {
-          'Authorization': this.foursquareApiKey,
-          'Accept': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.GMAPS_EXTRACTOR_TOKEN}`
+        },
+        body: JSON.stringify(requestBody)
       });
 
-      if (!searchResponse.ok) {
-        const errorText = await searchResponse.text();
-        console.error('Foursquare API error:', searchResponse.status, errorText);
-        
-        // If rate limited or no credits, return empty array to use fallback
-        if (searchResponse.status === 429 || errorText.includes('credits')) {
-          console.log('Foursquare API has no credits or is rate limited, using free alternatives');
-          return [];
-        }
-        
-        throw new Error(`Foursquare API error: ${searchResponse.status} ${searchResponse.statusText}`);
-      }
+      console.log('📊 Response status:', response.status);
+      console.log('📊 Response headers:', Object.fromEntries(response.headers.entries()));
 
-      const searchData = await searchResponse.json();
-      return this.formatFoursquareResults(searchData);
-
-    } catch (error) {
-      console.error('Error searching businesses with Foursquare:', error);
-      return [];
-    }
-  }
-
-  // Use Nominatim as primary, Foursquare as fallback
-  async searchBusinesses(query: string, location: string, radius: number = 15000, maxResults: number = 10): Promise<Business[]> {
-    try {
-      console.log(`Searching for businesses: "${query}" in "${location}"`);
-      
-      // Try Nominatim first (free and reliable)
-      let businesses = await this.searchBusinessesNominatim(query, location, radius, maxResults);
-      
-      // If we didn't get enough results and have Foursquare API key, try it as fallback
-      if (businesses.length < maxResults && this.foursquareApiKey) {
-        console.log(`Only found ${businesses.length} businesses with Nominatim, trying Foursquare as fallback...`);
+      if (!response.ok) {
+        // Try to get error details from response
+        let errorDetails = '';
         try {
-          const foursquareResults = await this.searchBusinessesFoursquare(query, location, radius, maxResults - businesses.length);
-          
-          // Add foursquare results that don't duplicate existing ones
-          const existingNames = new Set(businesses.map(b => b.name.toLowerCase()));
-          const newResults = foursquareResults.filter(b => !existingNames.has(b.name.toLowerCase()));
-          
-          businesses = [...businesses, ...newResults.map(business => ({
-            ...business, 
-            place_id: `4sq_${business.place_id}`
-          }))];
-        } catch (error) {
-          console.warn('Foursquare fallback failed:', error);
+          const errorResponse = await response.text();
+          errorDetails = ` - Response: ${errorResponse}`;
+          console.log('❌ Full error response:', errorResponse);
+        } catch (e) {
+          errorDetails = ' - Could not read error response';
         }
+        
+        throw new Error(`GMaps Extractor API error: ${response.status} ${response.statusText}${errorDetails}`);
       }
+
+      const data = await response.json();
+      console.log('📦 Response data structure:', Object.keys(data));
+      console.log('📦 Response data sample:', JSON.stringify(data, null, 2).substring(0, 500));
       
-      console.log(`Total businesses found: ${businesses.length}`);
-      return businesses.slice(0, maxResults);
+      if (!data.data || !Array.isArray(data.data)) {
+        console.log('No businesses found in GMaps Extractor response');
+        return [];
+      }
+
+      let businesses = data.data.map((business: any) => this.transformGMapsExtractorBusiness(business));
+      
+      // Apply filters
+      if (filters) {
+        businesses = this.applyFilters(businesses, filters);
+      }
+
+      // Enhance with website status checks for businesses with websites
+      businesses = await this.enhanceBusinessesWithWebsiteStatus(businesses);
+
+      return businesses;
 
     } catch (error) {
-      console.error('Error in business search:', error);
-      return [];
+      console.error('❌ Error with GMaps Extractor API:', error);
+      throw error;
     }
   }
 
-  // Helper method to format Foursquare results
-  private formatFoursquareResults(searchData: { results?: Array<{
-    name?: string;
-    fsq_id: string;
-    rating?: number;
-    location?: {
-      formatted_address?: string;
-      address?: string;
-      locality?: string;
-      region?: string;
-      postcode?: string;
-    };
-    categories?: Array<{ name: string }>;
-    price?: number;
-    website?: string;
-    tel?: string;
-    hours?: { display?: string };
-  }> }): Business[] {
-    if (!searchData.results || searchData.results.length === 0) {
-      console.log('No results found in Foursquare response');
-      return [];
-    }
-
-    return searchData.results.map((place): Business => ({
-      name: place.name || 'N/A',
-      place_id: place.fsq_id,
-      rating: place.rating || 'N/A',
-      address: place.location?.formatted_address || [
-        place.location?.address,
-        place.location?.locality,
-        place.location?.region,
-        place.location?.postcode
-      ].filter(Boolean).join(', ') || 'N/A',
-      types: place.categories?.map((cat) => cat.name) || [],
-      price_level: place.price || 'N/A',
-      website: place.website,
-      phone: place.tel,
-      total_ratings: 'N/A', // Foursquare doesn't provide this in basic search
-      hours: place.hours?.display ? [place.hours.display] : []
-    }));
-  }
-
-  // Enhanced website checking (same as before but with more features)
-  async checkWebsiteStatus(url: string): Promise<WebsiteStatus> {
+  // Simple geocoding helper - converts location string to coordinates
+  private async getLLFromLocation(location: string): Promise<string> {
     try {
-      if (!url || url === 'N/A') {
+      console.log(`🗺️ Geocoding location: "${location}"`);
+      
+      // Add User-Agent header to comply with Nominatim policy
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}&limit=1&addressdetails=1&countrycodes=us,ca,gb,au`,
+        {
+          headers: {
+            'User-Agent': 'LocalBusinessChecker/1.0 (contact@yourdomain.com)'
+          }
+        }
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('📍 Geocoding response:', data);
+        
+        if (data && data.length > 0) {
+          const { lat, lon, display_name } = data[0];
+          console.log(`✅ Geocoding successful: ${display_name} -> ${lat},${lon}`);
+          return `@${lat},${lon},11z`;
+        } else {
+          console.log('❌ No geocoding results found');
+        }
+      } else {
+        console.log(`❌ Geocoding request failed: ${response.status} ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error('❌ Geocoding error:', error);
+    }
+    
+    // If geocoding fails, use New York coordinates as fallback (like in the working example)
+    console.log(`🔄 Using fallback coordinates for New York`);
+    return '@40.6970194,-74.3093048,11z';
+  }
+
+  private transformGMapsExtractorBusiness(gmapsData: any): Business {
+    const social_media = {
+      facebook: gmapsData.facebook_links || [],
+      instagram: gmapsData.instagram_links || [],
+      linkedin: gmapsData.linkedin_links || [],
+      twitter: gmapsData.twitter_links || [],
+      youtube: gmapsData.youtube_links || [],
+      yelp: gmapsData.yelp_links || []
+    };
+
+    // Expose all relevant fields from the API
+    return {
+      name: gmapsData.name || 'Unknown Business',
+      place_id: gmapsData.place_id || '',
+      rating: gmapsData.average_rating || 0,
+      address: gmapsData.full_address || '',
+      types: gmapsData.categories ? gmapsData.categories.split(', ') : [],
+      price_level: 'N/A',
+      website: gmapsData.website ? this.cleanUrl(gmapsData.website) : undefined,
+      phone: gmapsData.phone || gmapsData.phones?.split(',')[0]?.trim(),
+      total_ratings: gmapsData.review_count || 0,
+      hours: gmapsData.opening_hours ? [gmapsData.opening_hours] : undefined,
+      location: {
+        lat: gmapsData.latitude || 0,
+        lng: gmapsData.longitude || 0
+      },
+      emails: gmapsData.emails || [],
+      social_media: Object.values(social_media).some(arr => arr.length > 0) ? social_media : undefined,
+      // Additional fields from API
+      claimed: gmapsData.claimed,
+      review_url: gmapsData.review_url,
+      featured_image: gmapsData.featured_image,
+      google_maps_url: gmapsData.google_maps_url,
+      google_knowledge_url: gmapsData.google_knowledge_url,
+      cid: gmapsData.cid,
+      kgmid: gmapsData.kgmid,
+      meta: gmapsData.meta,
+      tracking_ids: gmapsData.tracking_ids,
+      business_insights: this.generateBusinessInsights(gmapsData)
+    };
+  }
+
+  private generateBusinessInsights(businessData: any): BusinessInsights {
+    const hasWebsite = !!businessData.website;
+    const hasEmail = businessData.emails && businessData.emails.length > 0;
+    const hasSocialMedia = businessData.facebook_links?.length > 0 || 
+                          businessData.instagram_links?.length > 0 || 
+                          businessData.linkedin_links?.length > 0 ||
+                          businessData.twitter_links?.length > 0 ||
+                          businessData.youtube_links?.length > 0 ||
+                          businessData.yelp_links?.length > 0;
+    const reviewCount = businessData.review_count || 0;
+    const rating = businessData.average_rating || 0;
+    const categories = businessData.categories ? businessData.categories.split(',').map((c: string) => c.trim().toLowerCase()) : [];
+
+    // Calculate digital presence
+    let digitalPresence: 'strong' | 'moderate' | 'weak' | 'none' = 'none';
+    let digitalScore = 0;
+    if (hasWebsite) digitalScore += 30;
+    if (hasEmail) digitalScore += 25;
+    if (hasSocialMedia) digitalScore += 25;
+    if (reviewCount > 10) digitalScore += 20;
+    if (digitalScore >= 70) digitalPresence = 'strong';
+    else if (digitalScore >= 40) digitalPresence = 'moderate';
+    else if (digitalScore >= 20) digitalPresence = 'weak';
+
+    // Calculate opportunity score
+    let opportunityScore = 100;
+    if (!hasWebsite) opportunityScore -= 40;
+    if (!hasEmail) opportunityScore -= 30;
+    if (!hasSocialMedia) opportunityScore -= 20;
+    if (reviewCount < 5) opportunityScore -= 10;
+
+    // Estimate business size
+    let businessSize: 'small' | 'medium' | 'large' = 'small';
+    if (reviewCount > 50 && hasSocialMedia && hasWebsite) businessSize = 'medium';
+    if (reviewCount > 200 && digitalScore >= 70) businessSize = 'large';
+
+    // Recommended services based on digital gaps and business type
+    const recommendedServices: string[] = [];
+    if (!hasWebsite) recommendedServices.push('Website Development', 'Local SEO', 'Google Business Profile Setup');
+    if (!hasEmail) recommendedServices.push('Email Marketing Setup', 'CRM Integration');
+    if (!hasSocialMedia) recommendedServices.push('Social Media Marketing', 'Social Profile Creation');
+    if (reviewCount < 10) recommendedServices.push('Review Management', 'Reputation Management');
+    if (rating < 4.0) recommendedServices.push('Reputation Management', 'Customer Experience Consulting');
+    if (categories.includes('restaurant') || categories.includes('food')) {
+      recommendedServices.push('Online Ordering Setup', 'Menu Design', 'Food Delivery Integration');
+    }
+    if (categories.includes('real estate')) {
+      recommendedServices.push('Property Listing Website', 'Virtual Tour Creation', 'Lead Generation Ads');
+    }
+    if (categories.includes('salon') || categories.includes('spa')) {
+      recommendedServices.push('Online Booking System', 'Instagram Marketing', 'Loyalty Program Setup');
+    }
+    if (categories.includes('lawyer') || categories.includes('legal')) {
+      recommendedServices.push('Legal Blog Content', 'Lead Capture Forms', 'Google Ads for Legal');
+    }
+    if (categories.includes('contractor') || categories.includes('construction')) {
+      recommendedServices.push('Project Portfolio Website', 'Google Local Service Ads', 'Review Generation Campaigns');
+    }
+    if (categories.includes('medical') || categories.includes('doctor') || categories.includes('clinic')) {
+      recommendedServices.push('Appointment Scheduling', 'HIPAA-Compliant Forms', 'Healthcare SEO');
+    }
+    // Add more category-based recommendations as needed
+
+    return {
+      estimated_age: reviewCount > 50 ? 'Established (5+ years)' : 'Recent (1-5 years)',
+      business_size: businessSize,
+      digital_presence: digitalPresence,
+      opportunity_score: Math.max(0, Math.min(100, opportunityScore)),
+      recommended_services: [...new Set(recommendedServices)], // Remove duplicates
+      last_updated: new Date().toISOString()
+    };
+  }
+
+  private applyFilters(businesses: Business[], filters: SearchFilters): Business[] {
+    return businesses.filter(business => {
+      if (filters.min_rating && Number(business.rating) < filters.min_rating) return false;
+      if (filters.has_website && !business.website) return false;
+      if (filters.has_phone && !business.phone) return false;
+      if (filters.min_reviews && Number(business.total_ratings) < filters.min_reviews) return false;
+      
+      if (filters.business_types && filters.business_types.length > 0) {
+        const hasMatchingType = business.types.some(type => 
+          filters.business_types!.some(filterType => 
+            type.toLowerCase().includes(filterType.toLowerCase())
+          )
+        );
+        if (!hasMatchingType) return false;
+      }
+
+      return true;
+    }).slice(0, filters.max_results || 50);
+  }
+
+  private async enhanceBusinessesWithWebsiteStatus(businesses: Business[]): Promise<Business[]> {
+    const businessesWithWebsites = businesses.filter(b => b.website);
+    const maxConcurrent = 5; // Limit concurrent requests
+    
+    for (let i = 0; i < businessesWithWebsites.length; i += maxConcurrent) {
+      const batch = businessesWithWebsites.slice(i, i + maxConcurrent);
+      
+      await Promise.all(
+        batch.map(async (business) => {
+          try {
+            business.website_status = await this.checkWebsiteStatus(business.website!);
+          } catch (error) {
+            console.warn(`Failed to check website status for ${business.name}:`, error);
+            business.website_status = {
+              accessible: false,
+              last_checked: new Date().toISOString()
+            };
+          }
+        })
+      );
+    }
+
+    return businesses;
+  }
+
+  private async checkWebsiteStatus(url: string): Promise<WebsiteStatus> {
+    try {
+      const cleanedUrl = this.cleanUrl(url);
+      const startTime = Date.now();
+      
+      const response = await fetch(`/api/check-website`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: cleanedUrl })
+      });
+
+      const responseTime = Date.now() - startTime;
+      
+      if (!response.ok) {
         return {
           accessible: false,
-          status_code: 0,
-          error: 'No website provided'
-        };
-      }
-
-      // Ensure URL has protocol
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        url = 'https://' + url;
-      }
-
-      const startTime = Date.now();
-      let redirects = 0;
-      
-      // Use a more comprehensive fetch with timeout and redirect tracking
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-      
-      try {
-        const response = await fetch(url, {
-          method: 'HEAD', // HEAD request is faster for checking availability
-          signal: controller.signal,
-          redirect: 'follow',
-          headers: {
-            'User-Agent': 'BusinessChecker/1.0 (website status checker)'
-          }
-        });
-        
-        clearTimeout(timeoutId);
-        const loadTime = (Date.now() - startTime) / 1000;
-        
-        // Count redirects by checking if final URL is different
-        if (response.url !== url) {
-          redirects = 1; // Simplified redirect counting
-        }
-        
-        return {
-          accessible: response.ok,
           status_code: response.status,
-          load_time: loadTime,
-          has_ssl: url.startsWith('https://'),
-          redirects: redirects
+          response_time: responseTime,
+          last_checked: new Date().toISOString()
         };
-        
-      } catch (fetchError) {
-        clearTimeout(timeoutId);
-        
-        if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-          return {
-            accessible: false,
-            status_code: 0,
-            error: 'Request timeout',
-            load_time: 10.0,
-            has_ssl: url.startsWith('https://'),
-            redirects: 0
-          };
-        }
-        
-        throw fetchError;
       }
+
+      const data = await response.json();
+      
+      return {
+        accessible: data.accessible || false,
+        status_code: data.status_code,
+        response_time: responseTime,
+        has_contact_form: data.has_contact_form,
+        has_phone: data.has_phone,
+        has_email: data.has_email,
+        ssl_certificate: data.ssl_certificate,
+        mobile_friendly: data.mobile_friendly,
+        page_speed_score: data.page_speed_score,
+        last_checked: new Date().toISOString()
+      };
 
     } catch (error) {
       return {
         accessible: false,
-        status_code: 0,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        has_ssl: url?.startsWith('https://') || false,
-        redirects: 0
+        last_checked: new Date().toISOString()
       };
     }
   }
 
-  async analyzeBusinesses(query: string, location: string, radius: number = 15000, maxResults: number = 10): Promise<Business[]> {
-    try {
-      // Get list of businesses using free APIs
-      const businesses = await this.searchBusinesses(query, location, radius, maxResults);
-      
-      if (businesses.length === 0) {
-        console.log('No businesses found for the search query');
-        return [];
-      }
-      
-      console.log(`Analyzing ${businesses.length} businesses...`);
-      
-      // Check website status for each business
-      const detailedBusinesses = await Promise.all(
-        businesses.map(async (business) => {
-          try {
-            // Check website status if website exists
-            if (business.website && business.website !== 'N/A') {
-              const websiteStatus = await this.checkWebsiteStatus(business.website);
-              business.website_status = websiteStatus;
-            }
-            
-            return business;
-          } catch (error) {
-            console.error(`Error analyzing business ${business.name}:`, error);
-            return business;
-          }
-        })
-      );
-
-      return detailedBusinesses;
-
-    } catch (error) {
-      console.error('Error in analyze_businesses:', error);
-      return [];
+  private cleanUrl(url: string): string {
+    if (!url) return '';
+    
+    // Remove common prefixes and clean up the URL
+    let cleaned = url.trim();
+    
+    if (!cleaned.startsWith('http://') && !cleaned.startsWith('https://')) {
+      cleaned = 'https://' + cleaned;
     }
+    
+    // Remove trailing slashes and common URL parameters
+    cleaned = cleaned.replace(/\/$/, '');
+    cleaned = cleaned.split('?')[0]; // Remove query parameters
+    
+    return cleaned;
+  }
+
+  calculateLeadScore(business: Business): number {
+    let score = 50; // Base score
+    
+    // Rating impact
+    const rating = Number(business.rating);
+    if (rating >= 4.5) score += 15;
+    else if (rating >= 4.0) score += 10;
+    else if (rating >= 3.5) score += 5;
+    else if (rating < 3.0) score -= 10;
+
+    // Review count impact
+    const reviewCount = Number(business.total_ratings);
+    if (reviewCount >= 100) score += 10;
+    else if (reviewCount >= 50) score += 7;
+    else if (reviewCount >= 20) score += 5;
+    else if (reviewCount < 5) score -= 5;
+
+    // Digital presence impact
+    if (!business.website) score -= 20;
+    if (!business.phone) score -= 10;
+    
+    // Email and social media impact
+    if (business.emails && business.emails.length > 0) score += 15;
+    if (business.social_media) {
+      const socialCount = Object.values(business.social_media).filter(arr => arr && arr.length > 0).length;
+      if (socialCount >= 3) score += 10;
+      else if (socialCount >= 1) score += 5;
+    }
+
+    // Business insights impact
+    if (business.business_insights) {
+      const insights = business.business_insights;
+      if (insights.digital_presence === 'strong') score += 10;
+      else if (insights.digital_presence === 'moderate') score += 5;
+      else if (insights.digital_presence === 'none') score -= 15;
+      
+      if (insights.opportunity_score > 80) score += 10;
+      else if (insights.opportunity_score < 40) score -= 10;
+    }
+
+    // Website status impact
+    if (business.website_status) {
+      if (business.website_status.accessible) score += 5;
+      if (business.website_status.has_contact_form) score += 5;
+      if (business.website_status.has_email) score += 5;
+      if (business.website_status.ssl_certificate) score += 3;
+      if (business.website_status.mobile_friendly) score += 3;
+    }
+
+    return Math.max(0, Math.min(100, score));
+  }
+
+  generateMarketAnalysis(businesses: Business[]): {
+    market_saturation: string;
+    website_adoption_rate: number;
+    average_rating: number;
+    competition_level: string;
+    opportunity_score: number;
+    top_competitors: any[];
+    market_gaps: string[];
+  } {
+    if (businesses.length === 0) {
+      return {
+        market_saturation: 'unknown',
+        website_adoption_rate: 0,
+        average_rating: 0,
+        competition_level: 'unknown',
+        opportunity_score: 0,
+        top_competitors: [],
+        market_gaps: []
+      };
+    }
+
+    const businessesWithWebsites = businesses.filter(b => b.website && b.website !== 'N/A');
+    const websiteAdoptionRate = (businessesWithWebsites.length / businesses.length) * 100;
+    
+    const ratings = businesses
+      .map(b => typeof b.rating === 'number' ? b.rating : 0)
+      .filter(r => r > 0);
+    const averageRating = ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
+
+    // Determine market saturation
+    let marketSaturation = 'low';
+    if (businesses.length > 50) marketSaturation = 'high';
+    else if (businesses.length > 20) marketSaturation = 'medium';
+
+    // Determine competition level
+    let competitionLevel = 'low';
+    if (averageRating > 4.2 && websiteAdoptionRate > 70) competitionLevel = 'high';
+    else if (averageRating > 3.8 || websiteAdoptionRate > 50) competitionLevel = 'medium';
+
+    // Calculate opportunity score
+    let opportunityScore = 100;
+    if (websiteAdoptionRate > 80) opportunityScore -= 30;
+    if (averageRating > 4.5) opportunityScore -= 20;
+    if (businesses.length > 30) opportunityScore -= 15;
+
+    // Identify top competitors (businesses with high ratings and websites)
+    const topCompetitors = businesses
+      .filter(b => b.rating >= 4.0 && b.website)
+      .sort((a, b) => Number(b.rating) - Number(a.rating))
+      .slice(0, 5);
+
+    // Identify market gaps
+    const marketGaps: string[] = [];
+    if (websiteAdoptionRate < 50) marketGaps.push('Low website adoption - opportunity for web development services');
+    if (averageRating < 3.5) marketGaps.push('Poor customer satisfaction - opportunity for reputation management');
+    if (businesses.filter(b => b.social_media).length < businesses.length * 0.3) {
+      marketGaps.push('Limited social media presence - opportunity for social media marketing');
+    }
+
+    return {
+      market_saturation: marketSaturation,
+      website_adoption_rate: Math.round(websiteAdoptionRate * 10) / 10,
+      average_rating: Math.round(averageRating * 10) / 10,
+      competition_level: competitionLevel,
+      opportunity_score: Math.max(0, Math.min(100, opportunityScore)),
+      top_competitors: topCompetitors,
+      market_gaps: marketGaps
+    };
   }
 } 

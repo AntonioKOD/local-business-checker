@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { FreeBusinessChecker, SearchResults as BaseSearchResults } from '@/lib/business-checker-free';
+import { FreeClientCompass, SearchResults as BaseSearchResults, SearchFilters } from '@/lib/business-checker-free';
 import { getPayload } from 'payload';
 import config from '@/payload.config';
 
@@ -61,6 +61,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
+
+
     // Get user IP for rate limiting
     const userIP = request.headers.get('x-forwarded-for') || 
                    request.headers.get('x-real-ip') || 
@@ -80,7 +82,7 @@ export async function POST(request: NextRequest) {
           anonymousSearchCounts.set(userIP, { count: 0, lastReset: now, lastRequest: now });
         } else {
           // Check if user has exceeded search limit
-          if (userData.count >= 2) {
+          if (userData.count >= 3) {
             return NextResponse.json(
               { 
                 error: 'Free search limit reached. Upgrade to premium for unlimited searches.',
@@ -125,10 +127,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(cachedResult.results);
     }
 
-    const checker = new FreeBusinessChecker();
-    // Convert kilometers to meters for the API (default 15km if not provided)
-    const radiusInMeters = radiusKm ? radiusKm * 1000 : (radius || 15000);
-    let results = await checker.analyzeBusinesses(query, location, radiusInMeters, maxResults);
+    const checker = new FreeClientCompass();
+    
+    // Create search filters based on request parameters
+    const searchFilters: SearchFilters = {
+      max_results: Math.min(maxResults || 10, 20),
+      min_rating: minRating,
+      has_website: filterNoWebsite ? false : undefined, // If filterNoWebsite is true, we want businesses WITHOUT websites
+      min_reviews: 0 // Default minimum reviews
+    };
+    
+    let results = await checker.searchBusinesses(query, location, searchFilters);
 
     // Apply premium filtering if user is subscribed
     if (isSubscribed) {
@@ -147,9 +156,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // For anonymous users, limit to 5 businesses but show all were found
-    const limitedResults = isSubscribed ? results : results.slice(0, 5);
-    const remainingCount = isSubscribed ? 0 : Math.max(0, results.length - 5);
+    // Limit results: 20 max total, 20 for subscribed users, 3 for free users
+    const maxBusinesses = isSubscribed ? 20 : 3;
+    const limitedResults = results.slice(0, maxBusinesses);
+    const remainingCount = isSubscribed ? 0 : Math.max(0, results.length - 3);
 
     // Update search count for anonymous users
     if (!isSubscribed) {
@@ -202,27 +212,7 @@ export async function POST(request: NextRequest) {
     // Generate market analysis for premium users
     let marketAnalysis = null;
     if (isSubscribed && results.length > 0) {
-      // Use a mock market analysis for now since we don't have the full BusinessChecker class here
-      marketAnalysis = {
-        market_saturation: results.length < 20 ? 'low' : results.length > 50 ? 'high' : 'medium',
-        website_adoption_rate: Math.round((businessesWithWebsites / results.length) * 100),
-        average_rating: Math.round(averageRating * 10) / 10,
-        competition_level: averageRating < 3.5 ? 'low' : averageRating > 4.2 ? 'high' : 'medium',
-        opportunity_score: Math.round(((results.length - businessesWithWebsites) / results.length) * 100),
-        top_competitors: results
-          .filter(b => typeof b.rating === 'number' && b.rating > 4.0)
-          .sort((a, b) => (b.rating as number) - (a.rating as number))
-          .slice(0, 3),
-        market_gaps: [] as string[]
-      };
-      
-      // Add market gaps based on analysis
-      if (marketAnalysis.website_adoption_rate < 60) {
-        marketAnalysis.market_gaps.push('Low website adoption - high opportunity for web development services');
-      }
-      if (averageRating < 3.8) {
-        marketAnalysis.market_gaps.push('Below-average ratings - opportunity for reputation management services');
-      }
+      marketAnalysis = checker.generateMarketAnalysis(results);
     }
 
     const response: SearchResults = {
@@ -244,8 +234,8 @@ export async function POST(request: NextRequest) {
         total_found: results.length,
         showing: limitedResults.length,
         remaining: remainingCount,
-        upgrade_price: 7.00,
-        searches_remaining: isSubscribed ? null : Math.max(0, 2 - (anonymousSearchCounts.get(userIP)?.count || 0))
+        upgrade_price: 20.00,
+        searches_remaining: isSubscribed ? null : Math.max(0, 3 - (anonymousSearchCounts.get(userIP)?.count || 0))
       }
     };
 

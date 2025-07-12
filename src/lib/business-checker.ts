@@ -1,4 +1,4 @@
-import { Client } from '@googlemaps/google-maps-services-js';
+import { FreeClientCompass } from './business-checker-free';
 
 export interface Business {
   name: string;
@@ -21,6 +21,15 @@ export interface Business {
     lat: number;
     lng: number;
   };
+  emails?: string[];
+  social_media?: {
+    facebook?: string[];
+    instagram?: string[];
+    linkedin?: string[];
+    twitter?: string[];
+    youtube?: string[];
+    yelp?: string[];
+  };
 }
 
 export interface WebsiteStatus {
@@ -31,6 +40,8 @@ export interface WebsiteStatus {
   ssl_certificate?: boolean;
   mobile_friendly?: boolean;
   last_checked?: string;
+  has_contact_form?: boolean;
+  has_email?: boolean;
 }
 
 export interface WebsiteQuality {
@@ -107,117 +118,31 @@ export interface MarketAnalysis {
   market_gaps: string[];
 }
 
-export class BusinessChecker {
-  private client: Client;
+export class ClientCompass {
+  private freeClient: FreeClientCompass;
 
   constructor() {
-    this.client = new Client({});
+    this.freeClient = new FreeClientCompass();
   }
 
   async searchBusinesses(query: string, location: string, radius: number = 15000, maxResults: number = 10): Promise<Business[]> {
     try {
-      const geocodeResponse = await this.client.geocode({
-        params: {
-          address: location,
-          key: process.env.GOOGLE_MAPS_API_KEY!,
-        }
-      });
-
-      if (!geocodeResponse.data.results.length) {
-        throw new Error(`Could not find location: ${location}`);
-      }
-
-      const { lat, lng } = geocodeResponse.data.results[0].geometry.location;
-
-      const allBusinesses: Business[] = [];
-      const seenPlaceIds = new Set<string>();
-
-      const searchRadii = maxResults > 100 ? [radius * 0.3, radius * 0.6, radius] : [radius];
+      console.log(`🔍 Searching for "${query}" in ${location} with GMaps Extractor API...`);
       
-      for (const searchRadius of searchRadii) {
-        let nextPageToken: string | undefined;
+      const searchFilters = {
+        max_results: maxResults,
+        min_rating: 0,
+        has_website: undefined,
+        has_phone: undefined,
+        min_reviews: 0,
+        business_types: [],
+        exclude_chains: false
+      };
 
-        for (let page = 0; page < 3; page++) {
-          const placesResponse = await this.client.placesNearby({
-            params: {
-              location: { lat, lng },
-              radius: searchRadius,
-              keyword: query,
-              type: 'establishment',
-              key: process.env.GOOGLE_MAPS_API_KEY!,
-              ...(nextPageToken && { pagetoken: nextPageToken }),
-            }
-          });
-
-          for (const place of placesResponse.data.results) {
-            if (!seenPlaceIds.has(place.place_id!) && allBusinesses.length < maxResults) {
-              seenPlaceIds.add(place.place_id!);
-              const business: Business = {
-                name: place.name || 'N/A',
-                place_id: place.place_id!,
-                rating: place.rating || 'N/A',
-                address: place.vicinity || 'N/A',
-                types: place.types || [],
-                price_level: place.price_level || 'N/A',
-                location: {
-                  lat: place.geometry?.location?.lat || 0,
-                  lng: place.geometry?.location?.lng || 0,
-                }
-              };
-              allBusinesses.push(business);
-            }
-          }
-
-          nextPageToken = placesResponse.data.next_page_token;
-          if (!nextPageToken || allBusinesses.length >= maxResults) {
-            break;
-          }
-
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        }
-
-        if (allBusinesses.length >= maxResults) {
-          break;
-        }
-
-        if (searchRadii.length > 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-      }
-
-      if (allBusinesses.length < maxResults && maxResults > 60) {
-        try {
-          const textSearchResponse = await this.client.textSearch({
-            params: {
-              query: `${query} near ${geocodeResponse.data.results[0].formatted_address}`,
-              key: process.env.GOOGLE_MAPS_API_KEY!,
-            }
-          });
-
-          for (const place of textSearchResponse.data.results) {
-            if (!seenPlaceIds.has(place.place_id!) && allBusinesses.length < maxResults) {
-              seenPlaceIds.add(place.place_id!);
-              const business: Business = {
-                name: place.name || 'N/A',
-                place_id: place.place_id!,
-                rating: place.rating || 'N/A',
-                address: place.formatted_address || 'N/A',
-                types: place.types || [],
-                price_level: place.price_level || 'N/A',
-                location: {
-                  lat: place.geometry?.location?.lat || 0,
-                  lng: place.geometry?.location?.lng || 0,
-                }
-              };
-              allBusinesses.push(business);
-            }
-          }
-        } catch (error) {
-          console.error('Text search failed:', error);
-        }
-      }
-
-      return allBusinesses.slice(0, maxResults);
+      const businesses = await this.freeClient.searchBusinesses(query, location, searchFilters);
+      
+      // Apply radius filtering if needed (GMaps Extractor handles this internally)
+      return businesses.slice(0, maxResults);
 
     } catch (error) {
       console.error('Error searching businesses:', error);
@@ -227,44 +152,21 @@ export class BusinessChecker {
 
   async getBusinessDetails(placeId: string): Promise<Partial<Business>> {
     try {
-      const placeDetailsResponse = await this.client.placeDetails({
-        params: {
-          place_id: placeId,
-          fields: [
-            'name',
-            'website',
-            'formatted_phone_number',
-            'formatted_address',
-            'rating',
-            'user_ratings_total',
-            'opening_hours',
-            'price_level',
-            'type',
-            'geometry'
-          ],
-          key: process.env.GOOGLE_MAPS_API_KEY!,
-        }
-      });
-
-      const result = placeDetailsResponse.data.result;
-      const website = result.website;
-
+      // Since GMaps Extractor provides comprehensive data in the initial search,
+      // we'll return a basic structure for compatibility
       return {
-        name: result.name || 'N/A',
-        website: website,
-        phone: result.formatted_phone_number || 'N/A',
-        address: result.formatted_address || 'N/A',
-        rating: result.rating || 'N/A',
-        total_ratings: result.user_ratings_total || 'N/A',
-        hours: result.opening_hours?.weekday_text || [],
-        price_level: result.price_level || 'N/A',
-        types: result.types || [],
-        location: {
-          lat: result.geometry?.location?.lat || 0,
-          lng: result.geometry?.location?.lng || 0,
-        }
+        place_id: placeId,
+        name: 'Business details not available',
+        website: undefined,
+        phone: undefined,
+        address: undefined,
+        rating: 0,
+        total_ratings: 0,
+        hours: [],
+        price_level: 'N/A',
+        types: [],
+        location: { lat: 0, lng: 0 }
       };
-
     } catch (error) {
       console.error('Error getting business details:', error);
       return {};
@@ -273,185 +175,208 @@ export class BusinessChecker {
 
   async checkWebsiteStatus(url: string): Promise<WebsiteStatus> {
     try {
+      const cleanedUrl = this.cleanUrl(url);
       const startTime = Date.now();
       
-      const websiteUrl = url.startsWith('http') ? url : `https://${url}`;
-      
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
-      
-      const response = await fetch(websiteUrl, {
-        method: 'HEAD',
-        signal: controller.signal,
-        headers: {
-          'User-Agent': 'BusinessChecker/1.0 (Website Analysis Bot)'
-        }
+      const response = await fetch(`/api/check-website`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: cleanedUrl })
       });
+
+      const responseTime = Date.now() - startTime;
       
-      clearTimeout(timeoutId);
-      const loadTime = (Date.now() - startTime) / 1000;
-      
-      const hasSSL = websiteUrl.startsWith('https://');
+      if (!response.ok) {
+        return {
+          accessible: false,
+          status_code: response.status,
+          error: `HTTP ${response.status}`,
+          load_time: responseTime,
+          last_checked: new Date().toISOString()
+        };
+      }
+
+      const data = await response.json();
       
       return {
-        accessible: response.ok,
-        status_code: response.status,
-        load_time: loadTime,
-        ssl_certificate: hasSSL,
-        mobile_friendly: true,
+        accessible: data.accessible || false,
+        status_code: data.status_code || response.status,
+        error: data.error,
+        load_time: responseTime,
+        ssl_certificate: data.ssl_certificate,
+        mobile_friendly: data.mobile_friendly,
         last_checked: new Date().toISOString()
       };
-      
+
     } catch (error) {
       return {
         accessible: false,
         status_code: 0,
         error: error instanceof Error ? error.message : 'Unknown error',
-        ssl_certificate: false,
-        mobile_friendly: false,
+        load_time: 0,
         last_checked: new Date().toISOString()
       };
     }
   }
 
+  private cleanUrl(url: string): string {
+    if (!url) return '';
+    
+    let cleaned = url.trim();
+    
+    if (!cleaned.startsWith('http://') && !cleaned.startsWith('https://')) {
+      cleaned = 'https://' + cleaned;
+    }
+    
+    cleaned = cleaned.replace(/\/$/, '');
+    cleaned = cleaned.split('?')[0];
+    
+    return cleaned;
+  }
+
   calculateLeadScore(business: Business): number {
-    let score = 0;
+    let score = 50; // Base score
     
-    if (!business.website || business.website === 'N/A') {
-      score += 30;
-    } else if (business.website_status && !business.website_status.accessible) {
-      score += 25;
-    } else if (business.website_status && business.website_status.load_time && business.website_status.load_time > 3) {
-      score += 15;
+    // Rating impact
+    const rating = Number(business.rating);
+    if (rating >= 4.5) score += 15;
+    else if (rating >= 4.0) score += 10;
+    else if (rating >= 3.5) score += 5;
+    else if (rating < 3.0) score -= 10;
+
+    // Review count impact
+    const reviewCount = Number(business.total_ratings);
+    if (reviewCount >= 100) score += 10;
+    else if (reviewCount >= 50) score += 7;
+    else if (reviewCount >= 20) score += 5;
+    else if (reviewCount < 5) score -= 5;
+
+    // Digital presence impact
+    if (!business.website) score -= 20;
+    if (!business.phone) score -= 10;
+    
+    // Email and social media impact
+    if (business.emails && business.emails.length > 0) score += 15;
+    if (business.social_media) {
+      const socialCount = Object.values(business.social_media).filter(arr => arr && arr.length > 0).length;
+      if (socialCount >= 3) score += 10;
+      else if (socialCount >= 1) score += 5;
     }
-    
-    const rating = typeof business.rating === 'number' ? business.rating : 0;
-    const totalRatings = typeof business.total_ratings === 'number' ? business.total_ratings : 0;
-    
-    if (rating >= 4.0 && totalRatings > 50) {
-      score += 25;
-    } else if (rating >= 3.5 && totalRatings > 20) {
-      score += 20;
-    } else if (rating >= 3.0) {
-      score += 15;
-    } else {
-      score += 5;
+
+    // Business insights impact
+    if (business.business_insights) {
+      const insights = business.business_insights;
+      if (insights.digital_presence === 'strong') score += 10;
+      else if (insights.digital_presence === 'moderate') score += 5;
+      else if (insights.digital_presence === 'none') score -= 15;
+      
+      if (insights.opportunity_score > 80) score += 10;
+      else if (insights.opportunity_score < 40) score -= 10;
     }
-    
-    const highValueTypes = ['restaurant', 'lawyer', 'dentist', 'doctor', 'real_estate', 'contractor'];
-    const mediumValueTypes = ['retail', 'salon', 'fitness', 'automotive'];
-    
-    if (business.types.some(type => highValueTypes.includes(type))) {
-      score += 20;
-    } else if (business.types.some(type => mediumValueTypes.includes(type))) {
-      score += 15;
-    } else {
-      score += 10;
+
+    // Website status impact
+    if (business.website_status) {
+      if (business.website_status.accessible) score += 5;
+      if (business.website_status.has_contact_form) score += 5;
+      if (business.website_status.has_email) score += 5;
+      if (business.website_status.ssl_certificate) score += 3;
+      if (business.website_status.mobile_friendly) score += 3;
     }
-    
-    if (business.price_level === 3 || business.price_level === 4) {
-      score += 15;
-    } else if (business.price_level === 2) {
-      score += 10;
-    } else {
-      score += 5;
-    }
-    
-    if (business.phone && business.phone !== 'N/A') {
-      score += 10;
-    }
-    
-    return Math.min(score, 100);
+
+    return Math.max(0, Math.min(100, score));
   }
 
   async analyzeWebsiteQuality(): Promise<WebsiteQuality> {
-    const mockQuality: WebsiteQuality = {
-      overall_score: Math.floor(Math.random() * 40) + 60,
-      seo_score: Math.floor(Math.random() * 30) + 70,
-      performance_score: Math.floor(Math.random() * 40) + 60,
-      design_score: Math.floor(Math.random() * 30) + 70,
-      content_score: Math.floor(Math.random() * 40) + 60,
-      technical_score: Math.floor(Math.random() * 30) + 70,
-      issues: [
-        'Page load speed could be improved',
-        'Missing meta description',
-        'No structured data found'
-      ],
-      recommendations: [
-        'Optimize images for faster loading',
-        'Add meta descriptions to all pages',
-        'Implement structured data markup',
-        'Improve mobile responsiveness'
-      ],
+    // Placeholder implementation - in a real scenario, you'd integrate with a website analysis service
+    return {
+      overall_score: 75,
+      seo_score: 70,
+      performance_score: 80,
+      design_score: 75,
+      content_score: 70,
+      technical_score: 80,
+      issues: ['Missing meta descriptions', 'Slow loading times'],
+      recommendations: ['Optimize images', 'Add structured data'],
       last_analyzed: new Date().toISOString()
     };
-    
-    return mockQuality;
   }
 
   generateMarketAnalysis(businesses: Business[]): MarketAnalysis {
-    const totalBusinesses = businesses.length;
-    const businessesWithWebsites = businesses.filter(b => b.website && b.website !== 'N/A').length;
-    const websiteAdoptionRate = totalBusinesses > 0 ? (businessesWithWebsites / totalBusinesses) * 100 : 0;
+    if (businesses.length === 0) {
+      return {
+        market_saturation: 'unknown',
+        website_adoption_rate: 0,
+        average_rating: 0,
+        competition_level: 'unknown',
+        opportunity_score: 0,
+        top_competitors: [],
+        market_gaps: []
+      };
+    }
+
+    const businessesWithWebsites = businesses.filter(b => b.website && b.website !== 'N/A');
+    const websiteAdoptionRate = (businessesWithWebsites.length / businesses.length) * 100;
     
     const ratings = businesses
       .map(b => typeof b.rating === 'number' ? b.rating : 0)
       .filter(r => r > 0);
     const averageRating = ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
-    
-    let marketSaturation: 'low' | 'medium' | 'high' = 'medium';
-    if (totalBusinesses < 20) marketSaturation = 'low';
-    else if (totalBusinesses > 50) marketSaturation = 'high';
-    
-    let competitionLevel: 'low' | 'medium' | 'high' = 'medium';
-    if (averageRating < 3.5) competitionLevel = 'low';
-    else if (averageRating > 4.2) competitionLevel = 'high';
-    
-    const opportunityScore = Math.round(
-      (100 - websiteAdoptionRate) * 0.4 +
-      (5 - averageRating) * 20 * 0.3 +
-      (competitionLevel === 'low' ? 30 : competitionLevel === 'medium' ? 15 : 0) * 0.3
-    );
-    
+
+    // Determine market saturation
+    let marketSaturation: 'low' | 'medium' | 'high' = 'low';
+    if (businesses.length > 50) marketSaturation = 'high';
+    else if (businesses.length > 20) marketSaturation = 'medium';
+
+    // Determine competition level
+    let competitionLevel: 'low' | 'medium' | 'high' = 'low';
+    if (averageRating > 4.2 && websiteAdoptionRate > 70) competitionLevel = 'high';
+    else if (averageRating > 3.8 || websiteAdoptionRate > 50) competitionLevel = 'medium';
+
+    // Calculate opportunity score
+    let opportunityScore = 100;
+    if (websiteAdoptionRate > 80) opportunityScore -= 30;
+    if (averageRating > 4.5) opportunityScore -= 20;
+    if (businesses.length > 30) opportunityScore -= 15;
+
+    // Identify top competitors (businesses with high ratings and websites)
+    const topCompetitors = businesses
+      .filter(b => b.rating >= 4.0 && b.website)
+      .sort((a, b) => Number(b.rating) - Number(a.rating))
+      .slice(0, 5);
+
+    // Identify market gaps
+    const marketGaps: string[] = [];
+    if (websiteAdoptionRate < 50) marketGaps.push('Low website adoption - opportunity for web development services');
+    if (averageRating < 3.5) marketGaps.push('Poor customer satisfaction - opportunity for reputation management');
+    if (businesses.filter(b => b.social_media).length < businesses.length * 0.3) {
+      marketGaps.push('Limited social media presence - opportunity for social media marketing');
+    }
+
     return {
       market_saturation: marketSaturation,
-      website_adoption_rate: Math.round(websiteAdoptionRate),
+      website_adoption_rate: Math.round(websiteAdoptionRate * 10) / 10,
       average_rating: Math.round(averageRating * 10) / 10,
       competition_level: competitionLevel,
       opportunity_score: Math.max(0, Math.min(100, opportunityScore)),
-      top_competitors: businesses
-        .filter(b => typeof b.rating === 'number' && b.rating > 4.0)
-        .sort((a, b) => (b.rating as number) - (a.rating as number))
-        .slice(0, 3),
-      market_gaps: this.identifyMarketGaps(businesses, websiteAdoptionRate, averageRating)
+      top_competitors: topCompetitors,
+      market_gaps: marketGaps
     };
   }
 
   private identifyMarketGaps(businesses: Business[], websiteAdoptionRate: number, averageRating: number): string[] {
     const gaps: string[] = [];
     
-    if (websiteAdoptionRate < 60) {
-      gaps.push('Low website adoption - high opportunity for web development services');
+    if (websiteAdoptionRate < 50) {
+      gaps.push('Low website adoption - opportunity for web development services');
     }
     
-    if (averageRating < 3.8) {
-      gaps.push('Below-average ratings - opportunity for reputation management services');
+    if (averageRating < 3.5) {
+      gaps.push('Poor customer satisfaction - opportunity for reputation management');
     }
     
-    const businessesWithSlowWebsites = businesses.filter(b => 
-      b.website_status && b.website_status.load_time && b.website_status.load_time > 3
-    ).length;
-    
-    if (businessesWithSlowWebsites > businesses.length * 0.3) {
-      gaps.push('Many slow websites - opportunity for performance optimization services');
-    }
-    
-    const businessesWithoutSSL = businesses.filter(b => 
-      b.website_status && !b.website_status.ssl_certificate
-    ).length;
-    
-    if (businessesWithoutSSL > 0) {
-      gaps.push('Businesses without SSL certificates - security improvement opportunity');
+    const businessesWithSocialMedia = businesses.filter(b => b.social_media);
+    if (businessesWithSocialMedia.length < businesses.length * 0.3) {
+      gaps.push('Limited social media presence - opportunity for social media marketing');
     }
     
     return gaps;
@@ -464,8 +389,7 @@ export class BusinessChecker {
       const detailedBusinesses = await Promise.all(
         businesses.map(async (business) => {
           try {
-            const details = await this.getBusinessDetails(business.place_id);
-            const enhancedBusiness = { ...business, ...details };
+            const enhancedBusiness = { ...business };
             
             if (enhancedBusiness.website && enhancedBusiness.website !== 'N/A') {
               const websiteStatus = await this.checkWebsiteStatus(enhancedBusiness.website);
@@ -500,85 +424,76 @@ export class BusinessChecker {
   }
 
   private generateBusinessInsights(business: Business): BusinessInsights {
-    const totalRatings = typeof business.total_ratings === 'number' ? business.total_ratings : 0;
-    const rating = typeof business.rating === 'number' ? business.rating : 0;
-    
-    let estimatedAge: 'new' | 'established' | 'mature' = 'new';
-    if (totalRatings > 100) estimatedAge = 'mature';
-    else if (totalRatings > 30) estimatedAge = 'established';
-    
-    let businessSize: 'small' | 'medium' | 'large' = 'small';
-    if (business.price_level === 4 || totalRatings > 200) businessSize = 'large';
-    else if (business.price_level === 3 || totalRatings > 50) businessSize = 'medium';
-    
+    const hasWebsite = !!business.website;
+    const hasEmail = business.emails && business.emails.length > 0;
+    const hasSocialMedia = business.social_media && Object.values(business.social_media).some(arr => arr && arr.length > 0);
+    const reviewCount = Number(business.total_ratings) || 0;
+    const rating = Number(business.rating) || 0;
+
+    // Calculate digital presence
     let digitalPresence: 'strong' | 'moderate' | 'weak' | 'none' = 'none';
-    if (business.website && business.website !== 'N/A') {
-      if (business.website_status?.accessible && business.website_quality?.overall_score && business.website_quality.overall_score > 80) {
-        digitalPresence = 'strong';
-      } else if (business.website_status?.accessible) {
-        digitalPresence = 'moderate';
-      } else {
-        digitalPresence = 'weak';
-      }
-    }
-    
-    let opportunityScore = 0;
-    if (digitalPresence === 'none') opportunityScore += 40;
-    else if (digitalPresence === 'weak') opportunityScore += 30;
-    else if (digitalPresence === 'moderate') opportunityScore += 15;
-    
-    if (rating > 4.0 && totalRatings > 20) opportunityScore += 30;
-    if (businessSize === 'medium' || businessSize === 'large') opportunityScore += 20;
-    if (business.price_level === 3 || business.price_level === 4) opportunityScore += 10;
-    
+    let digitalScore = 0;
+    if (hasWebsite) digitalScore += 30;
+    if (hasEmail) digitalScore += 25;
+    if (hasSocialMedia) digitalScore += 25;
+    if (reviewCount > 10) digitalScore += 20;
+    if (digitalScore >= 70) digitalPresence = 'strong';
+    else if (digitalScore >= 40) digitalPresence = 'moderate';
+    else if (digitalScore >= 20) digitalPresence = 'weak';
+
+    // Calculate opportunity score
+    let opportunityScore = 100;
+    if (!hasWebsite) opportunityScore -= 40;
+    if (!hasEmail) opportunityScore -= 30;
+    if (!hasSocialMedia) opportunityScore -= 20;
+    if (reviewCount < 5) opportunityScore -= 10;
+
+    // Estimate business size
+    let businessSize: 'small' | 'medium' | 'large' = 'small';
+    if (reviewCount > 50 && hasSocialMedia && hasWebsite) businessSize = 'medium';
+    if (reviewCount > 200 && digitalScore >= 70) businessSize = 'large';
+
+    // Recommended services based on digital gaps
     const recommendedServices: string[] = [];
-    if (!business.website || business.website === 'N/A') {
-      recommendedServices.push('Website Development', 'SEO Setup', 'Google My Business Optimization');
-    } else if (digitalPresence === 'weak') {
-      recommendedServices.push('Website Redesign', 'Performance Optimization', 'SEO Audit');
-    } else if (digitalPresence === 'moderate') {
-      recommendedServices.push('SEO Optimization', 'Conversion Rate Optimization', 'Analytics Setup');
-    }
-    
-    if (rating < 4.0) {
-      recommendedServices.push('Reputation Management', 'Review Generation System');
-    }
-    
+    if (!hasWebsite) recommendedServices.push('Website Development', 'Local SEO', 'Google Business Profile Setup');
+    if (!hasEmail) recommendedServices.push('Email Marketing Setup', 'CRM Integration');
+    if (!hasSocialMedia) recommendedServices.push('Social Media Marketing', 'Social Profile Creation');
+    if (reviewCount < 10) recommendedServices.push('Review Management', 'Reputation Management');
+    if (rating < 4.0) recommendedServices.push('Reputation Management', 'Customer Experience Consulting');
+
     return {
-      estimated_age: estimatedAge,
+      estimated_age: reviewCount > 50 ? 'Established (5+ years)' : 'Recent (1-5 years)',
       business_size: businessSize,
       digital_presence: digitalPresence,
-      opportunity_score: Math.min(opportunityScore, 100),
-      recommended_services: recommendedServices,
+      opportunity_score: Math.max(0, Math.min(100, opportunityScore)),
+      recommended_services: [...new Set(recommendedServices)],
       last_updated: new Date().toISOString()
     };
   }
 }
 
-// Export a function for analyzing a single website (used by sentinel)
+// Export a function for website analysis
 export async function analyzeWebsite(url: string): Promise<{
   website_status: WebsiteStatus;
   website_quality: WebsiteQuality | null;
   analyzed_at: string;
 }> {
-  const checker = new BusinessChecker();
+  const checker = new ClientCompass();
   
-  try {
-    // Return basic website analysis data
-    const websiteStatus = await checker.checkWebsiteStatus(url);
-    const websiteQuality = await checker.analyzeWebsiteQuality();
-    
-    return {
-      website_status: websiteStatus,
-      website_quality: websiteQuality,
-      analyzed_at: new Date().toISOString()
-    };
-  } catch (error) {
-    console.error('Website analysis failed:', error);
-    return {
-      website_status: { accessible: false, status_code: 0, error: 'Analysis failed' },
-      website_quality: null,
-      analyzed_at: new Date().toISOString()
-    };
+  const websiteStatus = await checker.checkWebsiteStatus(url);
+  let websiteQuality = null;
+  
+  if (websiteStatus.accessible) {
+    try {
+      websiteQuality = await checker.analyzeWebsiteQuality();
+    } catch (error) {
+      console.error('Website quality analysis failed:', error);
+    }
   }
+  
+  return {
+    website_status: websiteStatus,
+    website_quality: websiteQuality,
+    analyzed_at: new Date().toISOString()
+  };
 }

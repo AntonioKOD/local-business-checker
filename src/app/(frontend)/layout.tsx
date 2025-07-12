@@ -1,74 +1,89 @@
-import React from 'react'
-import './global.css'
-import type { Metadata } from 'next'
-import {GoogleAnalytics} from '@next/third-parties/google'
+'use client';
 
-export const metadata: Metadata = {
-  title: {
-    default: 'BusinessChecker - Find Local Businesses & Analyze Their Websites',
-    template: '%s | BusinessChecker'
-  },
-  description: 'Discover local businesses and get comprehensive website analysis. Find businesses without websites, check website accessibility, and get detailed analytics. Perfect for lead generation and market research.',
-  keywords: [
-    'local business finder',
-    'website analysis',
-    'business directory',
-    'lead generation',
-    'market research',
-    'website checker',
-    'business search',
-    'local SEO',
-    'competitor analysis',
-    'business analytics'
-  ],
-  authors: [{ name: 'BusinessChecker' }],
-  creator: 'BusinessChecker',
-  publisher: 'BusinessChecker',
-  metadataBase: new URL('https://buildquick.io'),
-  alternates: {
-    canonical: '/',
-  },
-  openGraph: {
-    type: 'website',
-    locale: 'en_US',
-    url: 'https://buildquick.io',
-    title: 'BusinessChecker - Find Local Businesses & Analyze Their Websites',
-    description: 'Discover local businesses and get comprehensive website analysis. Find businesses without websites, check website accessibility, and get detailed analytics.',
-    siteName: 'BusinessChecker',
-    images: [
-      {
-        url: '/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'BusinessChecker - Local Business Finder & Website Analyzer',
-      },
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'BusinessChecker - Find Local Businesses & Analyze Their Websites',
-    description: 'Discover local businesses and get comprehensive website analysis. Perfect for lead generation and market research.',
-    images: ['/og-image.png'],
-    creator: '@businesschecker',
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-    },
-  },
-  verification: {
-    google: 'your-google-verification-code',
-  },
-}
+import React, { useState, useEffect } from 'react';
+import './global.css';
+import { GoogleAnalytics } from '@next/third-parties/google';
+import ModernNavbar from '@/components/ModernNavbar';
+import AuthModal from '@/components/AuthModal';
+import PaymentModal from '@/components/PaymentModal';
 
-export default async function RootLayout(props: { children: React.ReactNode }) {
-  const { children } = props
+export default function RootLayout(props: { children: React.ReactNode }) {
+  const { children } = props;
+  const [currentUser, setCurrentUser] = useState<{ id: string; email: string; firstName: string; lastName: string; subscriptionStatus?: string } | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+
+  // Check authentication status on mount
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      try {
+        const response = await fetch('/api/auth/verify-token');
+        if (response.ok) {
+          const data = await response.json();
+          setCurrentUser(data.user);
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+      } finally {
+        setAuthLoading(false);
+      }
+    };
+
+    checkAuthStatus();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      setCurrentUser(null);
+      localStorage.removeItem('auth-token');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
+  const handleAuthSuccess = (user: { id: string; email: string; firstName: string; lastName: string }, token: string) => {
+    setCurrentUser(user);
+    setShowAuthModal(false);
+    // Store token in localStorage as backup
+    localStorage.setItem('auth-token', token);
+  };
+
+  const handlePaymentSuccess = (user: { id: string; email: string; firstName: string; lastName: string }) => {
+    setCurrentUser(user);
+    setShowPaymentModal(false);
+  };
+
+  const handleSignUpClick = () => {
+    setShowAuthModal(false);
+    setShowPaymentModal(true);
+  };
+
+  if (authLoading) {
+    return (
+      <html lang="en">
+        <head>
+          <link rel="icon" href="/favicon.ico" />
+          <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+          <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+          <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+          <link rel="manifest" href="/site.webmanifest" />
+          <meta name="theme-color" content="#2563eb" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+        </head>
+        <body>
+          <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading...</p>
+            </div>
+          </div>
+          <GoogleAnalytics gaId="G-E2T6B7DTY4" />
+        </body>
+      </html>
+    );
+  }
 
   return (
     <html lang="en">
@@ -82,10 +97,36 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
       <body>
-        <main>{children}
-          <GoogleAnalytics gaId="G-E2T6B7DTY4" />
-        </main>
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+          <ModernNavbar
+            currentUser={currentUser}
+            onLoginClick={() => setShowAuthModal(true)}
+            onUpgradeClick={() => setShowPaymentModal(true)}
+            onLogout={handleLogout}
+            onCreateFunnel={() => window.location.href = '/funnels'}
+          />
+          <main>
+            {children}
+          </main>
+        </div>
+
+        {/* Global Modals */}
+        {showAuthModal && (
+          <AuthModal
+            onClose={() => setShowAuthModal(false)}
+            onAuthSuccess={handleAuthSuccess}
+            onSignUpClick={handleSignUpClick}
+          />
+        )}
+        {showPaymentModal && (
+          <PaymentModal
+            onClose={() => setShowPaymentModal(false)}
+            onPaymentSuccess={handlePaymentSuccess}
+          />
+        )}
+
+        <GoogleAnalytics gaId="G-E2T6B7DTY4" />
       </body>
     </html>
-  )
+  );
 }

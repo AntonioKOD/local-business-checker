@@ -6,27 +6,24 @@ import { CSS } from '@dnd-kit/utilities';
 import { GripVertical } from 'lucide-react';
 
 // Define Lead interface locally since payload types are not available
-interface BusinessData {
-  name: string;
-  address: string;
-  phone?: string;
-  website?: string;
-  rating: number;
-  review_count: number;
-}
-
 interface Lead {
   id: string;
-  businessName: string;
-  placeId: string;
-  status: 'new' | 'contacted' | 'discussion' | 'proposal' | 'won' | 'lost';
+  name: string;
+  email: string;
+  company?: string;
+  phone?: string;
+  businessType?: string;
+  currentChallenges?: Array<{ challenge: string }>;
+  budget?: string;
+  timeline?: string;
+  source?: string;
   leadScore: number;
-  businessData: BusinessData;
-  contactedDate?: string;
+  priority: 'high' | 'medium' | 'low';
+  funnelStep?: number;
+  status: 'new' | 'contacted' | 'qualified' | 'proposal-sent' | 'negotiating' | 'closed-won' | 'closed-lost' | 'unqualified';
   notes?: string;
-  isWatched?: boolean;
-  lastScanned?: string;
-  owner: {
+  submittedAt: string;
+  owner?: {
     id: string;
     [key: string]: unknown;
   };
@@ -66,8 +63,8 @@ export function SortableItem({ id, lead, onSelect }: SortableItemProps) {
     >
       <div className="flex items-start justify-between">
         <div className="flex-grow">
-          <p className="font-semibold text-gray-900 text-sm">{lead.businessName}</p>
-          <p className="text-xs text-gray-500">{lead.businessData.address || 'Address not available'}</p>
+          <p className="font-semibold text-gray-900 text-sm">{lead.name}</p>
+          <p className="text-xs text-gray-500">{lead.company || lead.email}</p>
         </div>
         <div {...attributes} {...listeners} className="p-1 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600">
           <GripVertical size={16} />
@@ -76,6 +73,9 @@ export function SortableItem({ id, lead, onSelect }: SortableItemProps) {
       <div className="mt-2 flex items-center justify-between">
         <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${leadScoreColor}`}>
             Lead Score: {lead.leadScore}
+        </span>
+        <span className="text-xs text-gray-500 capitalize">
+          {lead.priority}
         </span>
       </div>
     </div>

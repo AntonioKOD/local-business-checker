@@ -1,4 +1,4 @@
-# BusinessChecker - Complete SaaS Solution
+# Client Compass - Complete SaaS Solution
 
 A comprehensive SaaS application that helps businesses and agencies find local businesses, analyze their web presence, and identify opportunities. Built with modern authentication, subscription management, and analytics.
 
@@ -48,7 +48,7 @@ A comprehensive SaaS application that helps businesses and agencies find local b
 1. **Clone the repository**
    ```bash
    git clone <your-repo-url>
-   cd business-checker
+   cd client-compass
    ```
 
 2. **Install dependencies**
@@ -64,7 +64,7 @@ A comprehensive SaaS application that helps businesses and agencies find local b
    GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
 
    # MongoDB Database
-   MONGODB_URL=mongodb://localhost:27017/business-checker
+   MONGODB_URL=mongodb://localhost:27017/client-compass
 
    # JWT Secret for Authentication
    JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
@@ -103,7 +103,7 @@ A comprehensive SaaS application that helps businesses and agencies find local b
    ```
 
    Admin panel: [http://localhost:3001/admin](http://localhost:3001/admin)
-   - Email: admin@businesschecker.com
+   - Email: admin@clientcompass.com
    - Password: admin123
 
 ## API Setup

@@ -154,7 +154,7 @@ const CheckoutForm: React.FC<{ onSuccess: (user: { id: string; email: string; fi
                 console.warn('Subscription setup will be handled later:', subscriptionError);
               }
               
-              setMessage('Account created successfully! Welcome to BusinessChecker Premium! You can now access all premium features.');
+              setMessage('Account created successfully! Welcome to Client Compass Premium! You can now access all premium features.');
               onSuccess(userData.user);
               return;
             }
@@ -196,7 +196,7 @@ const CheckoutForm: React.FC<{ onSuccess: (user: { id: string; email: string; fi
                 console.warn('Subscription setup will be handled later:', subscriptionError);
               }
               
-              setMessage('Account created successfully! Welcome to BusinessChecker Premium! You can now access all premium features.');
+              setMessage('Account created successfully! Welcome to Client Compass Premium! You can now access all premium features.');
               onSuccess(createdUser.user);
             }
           } catch (error) {
@@ -328,7 +328,7 @@ const CheckoutForm: React.FC<{ onSuccess: (user: { id: string; email: string; fi
         </ul>
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border-2 border-blue-200 shadow-lg">
           <div className="flex justify-between items-center mb-2">
-                            <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">$7.00</span>
+                            <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">$20.00</span>
             <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">per month</span>
           </div>
           <div className="flex items-center space-x-2">
@@ -392,7 +392,7 @@ const CheckoutForm: React.FC<{ onSuccess: (user: { id: string; email: string; fi
         ) : (
           <>
             <Crown className="w-5 h-5" />
-            <span>Start Premium Subscription - $7/month</span>
+            <span>Start Premium Subscription - $20/month</span>
           </>
         )}
       </button>

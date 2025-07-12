@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { BusinessChecker, SearchResults } from '@/lib/business-checker';
+import { ClientCompass, SearchResults } from '@/lib/business-checker';
 import { getPayload } from 'payload';
 import config from '@/payload.config';
 
@@ -40,14 +40,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Both query and location are required' },
         { status: 400 }
-      );
-    }
-
-    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
-    if (!apiKey || apiKey === 'your_google_maps_api_key_here') {
-      return NextResponse.json(
-        { error: 'Google Maps API key not configured. Please set GOOGLE_MAPS_API_KEY environment variable.' },
-        { status: 500 }
       );
     }
 
@@ -93,7 +85,7 @@ export async function POST(request: NextRequest) {
         const hoursElapsed = (now - ipData.lastReset) / (1000 * 60 * 60);
         if (hoursElapsed >= SEARCH_LIMIT_RESET_HOURS) {
           anonymousSearchCounts.set(userIP, { count: 0, lastReset: now, lastRequest: now });
-        } else if (ipData.count >= 2) {
+        } else if (ipData.count >= 3) {
           canSearchAnonymously = false;
         }
       } else {
@@ -104,9 +96,9 @@ export async function POST(request: NextRequest) {
     if (!isSubscribed && !canSearchAnonymously) {
       return NextResponse.json({
         error: 'Search limit exceeded',
-        message: 'You have reached the limit of 2 free searches. Subscribe to get unlimited searches.',
+        message: 'You have reached the limit of 3 free searches. Subscribe to get unlimited searches.',
         requiresSubscription: true,
-        upgradePrice: 7.00
+        upgradePrice: 20.00
       }, { status: 403 });
     }
 
@@ -131,17 +123,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(cachedResult.results);
     }
 
-    const checker = new BusinessChecker();
-    let results = await checker.analyzeBusinesses(query, location, radius || 15000, maxResults);
+    const checker = new ClientCompass();
+    let results = await checker.analyzeBusinesses(query, location, radius || 15000, Math.min(maxResults, 20));
 
     // Apply premium filtering if user is subscribed and filterNoWebsite is enabled
     if (isSubscribed && filterNoWebsite) {
       results = results.filter(business => !business.website || business.website === 'N/A');
     }
 
-    // For anonymous users, limit to 5 businesses but show all were found
-    const limitedResults = isSubscribed ? results : results.slice(0, 5);
-    const remainingCount = isSubscribed ? 0 : Math.max(0, results.length - 5);
+    // Limit results: 20 max total, 20 for subscribed users, 3 for free users
+    const maxBusinesses = isSubscribed ? 20 : 3;
+    const limitedResults = results.slice(0, maxBusinesses);
+    const remainingCount = isSubscribed ? 0 : Math.max(0, results.length - 3);
 
     // Update search count for anonymous users
     if (!isSubscribed) {
@@ -169,6 +162,7 @@ export async function POST(request: NextRequest) {
           websitesFound: results.filter(b => b.website && b.website !== 'N/A').length,
           accessibleWebsites: results.filter(b => b.website_status?.accessible).length,
           searchDate: new Date(),
+          searchMethod: 'gmaps_extractor', // Track that this used GMaps Extractor API
         },
       });
       console.log('Search logged successfully');
@@ -211,8 +205,8 @@ export async function POST(request: NextRequest) {
         total_found: results.length,
         showing: limitedResults.length,
         remaining: remainingCount,
-        upgrade_price: 7.00,
-        searches_remaining: isSubscribed ? null : Math.max(0, 2 - (anonymousSearchCounts.get(userIP)?.count || 0))
+        upgrade_price: 20.00,
+        searches_remaining: isSubscribed ? null : Math.max(0, 3 - (anonymousSearchCounts.get(userIP)?.count || 0))
       }
     };
 

@@ -2,8 +2,8 @@ import { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'BusinessChecker - Local Business Finder & Website Analyzer',
-    short_name: 'BusinessChecker',
+    name: 'Client Compass - Local Business Finder & Website Analyzer',
+    short_name: 'Client Compass',
     description: 'Discover local businesses and get comprehensive website analysis. Perfect for lead generation and market research.',
     start_url: '/',
     display: 'standalone',

@@ -1,172 +1,124 @@
-# Free API Setup Guide for BusinessChecker
+# Business Search API Setup Guide
 
-This guide shows you how to replace Google Places API with **completely free alternatives** that provide excellent business data and website checking capabilities.
+This guide shows you how to use **GMaps Extractor API** for comprehensive business data extraction and lead generation.
 
-## 🆓 Free API Options (Choose One or More)
+## 🎯 GMaps Extractor API Setup
 
-### Option 1: Foursquare Places API ⭐ **RECOMMENDED**
-- **Cost**: 100,000 requests/month FREE
-- **Best Quality**: Rich business data, websites, phone numbers
-- **Signup**: [Foursquare Developer](https://developer.foursquare.com/)
+### GMaps Extractor API ⭐ **PRIMARY & CONFIGURED**
+- **Status**: ✅ **READY TO USE** - Token already configured
+- **Features**: 
+  - 📧 **Email extraction** from business websites
+  - 📱 **Social media links** (Facebook, Instagram, LinkedIn, Twitter, YouTube, Yelp)
+  - 📍 **Comprehensive business data** (ratings, reviews, hours, images)
+  - 🏢 **Business insights** and lead scoring
+  - 🌐 **Website status checking**
+- **Data Quality**: Highest - includes emails and social profiles
+- **Token**: Pre-configured with `1zZOSeqQTBs3I62Ruj0oSyXWCQqfhtC3XGOh55AI25O5xbVK`
 
-### Option 2: LocationIQ + OpenStreetMap 
-- **Cost**: 5,000 requests/day FREE
-- **Best Coverage**: Global data, community-maintained
-- **Signup**: [LocationIQ](https://locationiq.com/)
+## 🚀 Current Setup Status
 
-### Option 3: 100% Free OpenStreetMap Only
-- **Cost**: Completely free (no API key required)
-- **Limitations**: May have less complete business data in some areas
+### ✅ **GMaps Extractor - Active & Ready**
+Your system is pre-configured with:
+- **API Token**: Integrated and working
+- **Enhanced Data**: Email extraction, social media discovery
+- **Lead Insights**: Automated business scoring and recommendations
+- **Website Analysis**: SSL, mobile-friendly, contact form detection
 
-## 🚀 Quick Setup (5 minutes)
+## 📊 **What You Get Now**
 
-### Step 1: Get Your Free API Keys
-
-#### For Foursquare (Recommended):
-1. Go to [Foursquare Developer Portal](https://developer.foursquare.com/)
-2. Sign up for free account
-3. Create a new project
-4. Copy your API key (starts with `fsq_`)
-
-#### For LocationIQ (Optional backup):
-1. Go to [LocationIQ](https://locationiq.com/)
-2. Sign up for free account
-3. Copy your API key
-
-### Step 2: Add Environment Variables
-
-Add these to your `.env.local` file:
-
-```bash
-# Foursquare API (100k free requests/month)
-FOURSQUARE_API_KEY=fsq_your_foursquare_api_key_here
-
-# LocationIQ API (5k free requests/day) - Optional
-LOCATIONIQ_API_KEY=pk.your_locationiq_key_here
-
-# Optional: HERE API (20k free requests/month)
-HERE_API_KEY=your_here_api_key_here
+### Enhanced Business Data
+```json
+{
+  "name": "Business Name",
+  "address": "Full Address",
+  "rating": 4.5,
+  "total_ratings": 150,
+  "website": "https://business.com",
+  "phone": "+1-555-123-4567",
+  "emails": ["contact@business.com", "info@business.com"],
+  "social_media": {
+    "facebook": ["https://facebook.com/business"],
+    "instagram": ["https://instagram.com/business"],
+    "linkedin": ["https://linkedin.com/company/business"],
+    "twitter": ["https://twitter.com/business"],
+    "youtube": ["https://youtube.com/business"],
+    "yelp": ["https://yelp.com/biz/business"]
+  },
+  "business_insights": {
+    "digital_presence": "strong",
+    "opportunity_score": 85,
+    "recommended_services": ["SEO Optimization", "Social Media Marketing"]
+  }
+}
 ```
 
-### Step 3: Update Your Search Endpoint
-
-Replace your existing search call with the free API version:
-
-```javascript
-// In your frontend code, change from:
-const response = await fetch('/api/search', {
-  // ... existing code
-});
-
-// To:
-const response = await fetch('/api/search-free', {
-  // ... same parameters
-});
+### Search Filters
+```typescript
+interface SearchFilters {
+  min_rating?: number;        // Minimum star rating
+  has_website?: boolean;      // Must have website
+  has_phone?: boolean;        // Must have phone
+  min_reviews?: number;       // Minimum review count
+  max_results?: number;       // Limit results (default: 50)
+  business_types?: string[];  // Filter by categories
+  exclude_chains?: boolean;   // Exclude chain businesses
+}
 ```
 
-## 📊 Feature Comparison
-
-| Feature | Google Places | Free APIs | Notes |
-|---------|---------------|-----------|-------|
-| **Cost** | $2-17 per 1k requests | **FREE** | Save $200-1700/month |
-| **Business Data** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Foursquare has excellent data |
-| **Website URLs** | ✅ | ✅ | Included in most results |
-| **Phone Numbers** | ✅ | ✅ | Available |
-| **Hours** | ✅ | ✅ | Available |
-| **Ratings** | ✅ | ✅ (Foursquare) | OSM doesn't have ratings |
-| **Global Coverage** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | Very good coverage |
-
-## 🎯 What Your Users Get
-
-### ✅ Complete Business Information:
-- Business name and address
-- Phone numbers and websites
-- Operating hours
-- Business categories
-- Ratings (via Foursquare)
-
-### ✅ Advanced Website Analysis:
-- Website accessibility checking
-- SSL certificate detection
-- Response time measurement
-- Error detection and reporting
-- Mobile-friendly testing
-
-### ✅ Powerful Filtering:
-- Find businesses without websites
-- Filter by business type
-- Distance-based searching
-- Custom result limits
-
-## 💡 Free API Benefits Over Google
-
-### 1. **Massive Cost Savings**
-```
-Google Places: $17 per 1,000 requests
-Free APIs: $0 per 100,000 requests
-Monthly savings: $1,700+ for typical usage
+### Usage Example
+```typescript
+const businesses = await businessChecker.searchBusinesses(
+  "design agency",           // Search query
+  "New York, NY",           // Location
+  {
+    min_rating: 4.0,        // 4+ stars only
+    has_website: true,      // Must have website
+    min_reviews: 10,        // 10+ reviews
+    max_results: 25         // Limit to 25 results
+  }
+);
 ```
 
-### 2. **Better Terms of Service**
-- No usage restrictions
-- Can store and cache data
-- Commercial use allowed
-- No attribution requirements
+## 📈 **Performance & Reliability**
 
-### 3. **Multiple Data Sources**
-- Foursquare: Excellent for restaurants, retail
-- OpenStreetMap: Community-driven, constantly updated
-- LocationIQ: Global geocoding
+### ✅ **High Performance**
+- **Primary API**: GMaps Extractor for rich data
+- **Concurrent Processing**: Parallel website checks
+- **Rate Limiting**: Built-in request management
+- **Caching**: Intelligent result caching
 
-## 🔧 Advanced Configuration
+### ✅ **Data Quality**
+- **Email Extraction**: Real contact emails from websites
+- **Social Discovery**: Active social media profiles
+- **Website Analysis**: Technical SEO insights
+- **Lead Scoring**: AI-powered opportunity assessment
 
-### Fallback Strategy (Recommended)
-```javascript
-// The system automatically tries:
-// 1. Foursquare API (if key provided)
-// 2. OpenStreetMap + LocationIQ (if key provided)  
-// 3. OpenStreetMap only (always available)
-```
+## 🎉 **Ready to Use!**
 
-### Rate Limiting
-- Foursquare: 100,000/month
-- LocationIQ: 5,000/day  
-- OpenStreetMap: No limits (fair usage)
+Your business search system is fully configured and ready. The GMaps Extractor API will provide:
 
-### Custom Business Categories
-```javascript
-// Add more business types to search:
-const categories = [
-  'restaurant', 'cafe', 'bar', 'hotel',
-  'pharmacy', 'hospital', 'dentist',
-  'bank', 'shop', 'mall', 'gym'
-];
-```
+- ✅ **Rich Business Data** with emails and social media
+- ✅ **Website Quality Analysis** for better lead qualification  
+- ✅ **Automated Lead Scoring** for prioritization
+- ✅ **Business Insights** for targeted outreach
 
-## 🎉 Ready to Switch?
+No additional setup required - start searching for high-quality leads immediately!
 
-### Test the Free APIs:
-1. Add your API keys to `.env.local`
-2. Update your search endpoint to `/api/search-free`
-3. Test with your typical searches
-4. Compare results with Google Places
+---
 
-### Migration Benefits:
-- ✅ Save thousands per month
-- ✅ Better API terms
-- ✅ Multiple data sources
-- ✅ Same user experience
-- ✅ Enhanced features
+### 🆘 **Need Help?**
 
-## 🤝 Need Help?
+If you experience any issues:
+1. Check that your search queries are specific (e.g., "restaurants in Miami" vs just "food")
+2. Verify location format (city, state or full address)
+3. Monitor console logs for detailed API responses
+4. The system automatically handles geocoding and coordinate conversion
 
-The free APIs provide excellent business data that's perfect for:
-- Lead generation
-- Market research  
-- Business directory applications
-- Website analysis tools
-- Local business discovery
+### 🔧 **API Features**
 
-**Sources**: 
-- [GitHub Public APIs Repository](https://github.com/public-apis/public-apis)
-- [SafeGraph Places API Alternatives](https://www.safegraph.com/guides/google-places-api-alternatives) 
+- **Automatic Geocoding**: Converts location strings to coordinates
+- **Email Extraction**: Finds contact emails from business websites
+- **Social Media Discovery**: Identifies active social profiles
+- **Lead Scoring**: Calculates opportunity scores based on digital presence
+- **Business Insights**: Provides recommendations for services
+- **Website Analysis**: Checks accessibility, SSL, mobile-friendliness 

@@ -28,8 +28,7 @@ export const Notifications: CollectionConfig = {
     {
       name: 'lead',
       type: 'relationship',
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      relationTo: 'leads' as any,
+      relationTo: 'clientleads' as any,
       required: true,
       admin: {
         readOnly: true,

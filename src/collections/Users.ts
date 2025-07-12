@@ -5,7 +5,7 @@ export const Users: CollectionConfig = {
   auth: true,
   admin: {
     useAsTitle: 'email',
-    description: 'Manage BusinessChecker users and their subscriptions',
+    description: 'Manage Client Compass users and their subscriptions',
   },
   fields: [
     {

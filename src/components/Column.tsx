@@ -5,10 +5,25 @@ import { useDroppable } from '@dnd-kit/core';
 // Define Lead interface locally since payload types are not available
 interface Lead {
   id: string;
-  businessName: string;
-  status: string;
-  leadScore?: number;
-  businessData?: Record<string, unknown>;
+  name: string;
+  email: string;
+  company?: string;
+  phone?: string;
+  businessType?: string;
+  currentChallenges?: Array<{ challenge: string }>;
+  budget?: string;
+  timeline?: string;
+  source?: string;
+  leadScore: number;
+  priority: 'high' | 'medium' | 'low';
+  funnelStep?: number;
+  status: 'new' | 'contacted' | 'qualified' | 'proposal-sent' | 'negotiating' | 'closed-won' | 'closed-lost' | 'unqualified';
+  notes?: string;
+  submittedAt: string;
+  owner?: {
+    id: string;
+    [key: string]: unknown;
+  };
 }
 
 interface ColumnProps {
