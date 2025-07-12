@@ -63,6 +63,7 @@ export default function FunnelsPage() {
         }
       } catch (error) {
         // Do nothing, just means not logged in
+        console.error('Error checking auth status:', error);
       }
     };
 
