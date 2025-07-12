@@ -479,6 +479,21 @@ export default function ClientCompass() {
             </form>
           </div>
 
+          {/* Free User Limit Notice */}
+          {!currentUser && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <div className="flex items-center space-x-2">
+                <AlertCircle className="w-5 h-5 text-blue-600" />
+                <div>
+                  <p className="text-blue-800 font-medium">Free Search Limit</p>
+                  <p className="text-blue-700 text-sm mt-1">
+                    Free users can perform 1 search per 24 hours. Upgrade to premium for unlimited searches and advanced features.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Error Display */}
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-4">
@@ -514,7 +529,7 @@ export default function ClientCompass() {
                 </div>
 
                 {/* CSV Export Button */}
-                <div className="mt-6 flex flex-col items-center space-y-3">
+                <div className="mt-6 flex justify-center">
                   <button
                     onClick={exportToCSV}
                     className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium rounded-xl shadow-lg transform hover:scale-105 transition-all duration-200"
@@ -522,10 +537,6 @@ export default function ClientCompass() {
                     <Download className="w-5 h-5 mr-2" />
                     Export to CSV
                   </button>
-                  <p className="text-xs text-gray-500 text-center max-w-md">
-                    💾 Search results are not automatically saved to reduce database costs. 
-                    Export your results to keep them for future reference.
-                  </p>
                 </div>
 
                 {/* Payment Info */}
