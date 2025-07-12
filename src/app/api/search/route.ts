@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
         const hoursElapsed = (now - ipData.lastReset) / (1000 * 60 * 60);
         if (hoursElapsed >= SEARCH_LIMIT_RESET_HOURS) {
           anonymousSearchCounts.set(userIP, { count: 0, lastReset: now, lastRequest: now });
-        } else if (ipData.count >= 3) {
+        } else if (ipData.count >= 1) {
           canSearchAnonymously = false;
         }
       } else {
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
     if (!isSubscribed && !canSearchAnonymously) {
       return NextResponse.json({
         error: 'Search limit exceeded',
-        message: 'You have reached the limit of 3 free searches. Subscribe to get unlimited searches.',
+        message: 'You have reached the limit of 1 free search. Subscribe to get unlimited searches.',
         requiresSubscription: true,
         upgradePrice: 20.00
       }, { status: 403 });
@@ -119,10 +119,10 @@ export async function POST(request: NextRequest) {
       results = results.filter(business => !business.website || business.website === 'N/A');
     }
 
-    // Limit results: 20 max total, 20 for subscribed users, 3 for free users
-    const maxBusinesses = isSubscribed ? 20 : 3;
+    // Limit results: 20 max total, 20 for subscribed users, 1 for free users
+    const maxBusinesses = isSubscribed ? 20 : 1;
     const limitedResults = results.slice(0, maxBusinesses);
-    const remainingCount = isSubscribed ? 0 : Math.max(0, results.length - 3);
+    const remainingCount = isSubscribed ? 0 : Math.max(0, results.length - 1);
 
     // Update search count for anonymous users
     if (!isSubscribed) {
@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
         showing: limitedResults.length,
         remaining: remainingCount,
         upgrade_price: 20.00,
-        searches_remaining: isSubscribed ? null : Math.max(0, 3 - (anonymousSearchCounts.get(userIP)?.count || 0))
+        searches_remaining: isSubscribed ? null : Math.max(0, 1 - (anonymousSearchCounts.get(userIP)?.count || 0))
       }
     };
 

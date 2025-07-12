@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
           anonymousSearchCounts.set(userIP, { count: 0, lastReset: now, lastRequest: now });
         } else {
           // Check if user has exceeded search limit
-          if (userData.count >= 3) {
+          if (userData.count >= 1) {
             return NextResponse.json(
               { 
                 error: 'Free search limit reached. Upgrade to premium for unlimited searches.',
@@ -174,10 +174,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Limit results: 20 max total, 20 for subscribed users, 3 for free users
-    const maxBusinesses = isSubscribed ? 20 : 3;
+    // Limit results: 20 max total, 20 for subscribed users, 1 for free users
+    const maxBusinesses = isSubscribed ? 20 : 1;
     const limitedResults = results.slice(0, maxBusinesses);
-    const remainingCount = isSubscribed ? 0 : Math.max(0, results.length - 3);
+    const remainingCount = isSubscribed ? 0 : Math.max(0, results.length - 1);
 
     // Update search count for anonymous users
     if (!isSubscribed) {
@@ -231,7 +231,7 @@ export async function POST(request: NextRequest) {
         showing: limitedResults.length,
         remaining: remainingCount,
         upgrade_price: 20.00,
-        searches_remaining: isSubscribed ? null : Math.max(0, 3 - (anonymousSearchCounts.get(userIP)?.count || 0))
+        searches_remaining: isSubscribed ? null : Math.max(0, 1 - (anonymousSearchCounts.get(userIP)?.count || 0))
       }
     };
 
