@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, MapPin, Globe, CheckCircle, XCircle, AlertCircle, Crown, Zap, Lightbulb, Briefcase, Plus, Download, TrendingUp } from 'lucide-react';
+import { Search, Globe, CheckCircle, XCircle, AlertCircle, Crown, Zap, Lightbulb, Briefcase, Plus, Download, TrendingUp } from 'lucide-react';
 import WebsiteReportModal from '@/components/WebsiteReportModal';
 
 // Enhanced interfaces to match backend
@@ -354,15 +354,14 @@ export default function ClientCompass() {
                   <label htmlFor="query" className="block text-sm font-semibold text-gray-700 mb-3">
                     What type of business are you looking for?
                   </label>
-                  <div className="relative">
-                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 group-focus-within:text-blue-500 transition-colors" />
+                  <div>
                     <input
                       type="text"
                       id="query"
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
                       placeholder="restaurants, dentists, plumbers, hotels..."
-                      className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-black placeholder-gray-400 bg-white/90"
+                      className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-black placeholder-gray-400 bg-white/90"
                       required
                     />
                   </div>
@@ -371,15 +370,14 @@ export default function ClientCompass() {
                   <label htmlFor="location" className="block text-sm font-semibold text-gray-700 mb-3">
                     Where should we search?
                   </label>
-                  <div className="relative">
-                    <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 group-focus-within:text-blue-500 transition-colors" />
+                  <div>
                     <input
                       type="text"
                       id="location"
                       value={location}
                       onChange={(e) => setLocation(e.target.value)}
                       placeholder="New York, NY or 10001"
-                      className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-black placeholder-gray-400 bg-white/90"
+                      className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-black placeholder-gray-400 bg-white/90"
                       required
                     />
                   </div>

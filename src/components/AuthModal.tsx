@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, User, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { X, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 
 interface AuthModalProps {
@@ -147,14 +147,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess, onSignUpC
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     First Name
                   </label>
-                  <div className="relative">
-                    <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <div>
                     <input
                       type="text"
                       name="firstName"
                       value={formData.firstName}
                       onChange={handleInputChange}
-                      className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-white transition-colors"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-white transition-colors"
                       placeholder="Enter your first name"
                       required
                     />
@@ -165,14 +164,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess, onSignUpC
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Last Name
                   </label>
-                  <div className="relative">
-                    <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <div>
                     <input
                       type="text"
                       name="lastName"
                       value={formData.lastName}
                       onChange={handleInputChange}
-                      className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-white transition-colors"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-white transition-colors"
                       placeholder="Enter your last name"
                       required
                     />
@@ -185,14 +183,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess, onSignUpC
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Email Address
               </label>
-              <div className="relative">
-                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <div>
                 <input
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-white transition-colors"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-white transition-colors"
                   placeholder="Enter your email"
                   required
                 />
@@ -204,13 +201,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ onClose, onAuthSuccess, onSignUpC
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   name="password"
                   value={formData.password}
                   onChange={handleInputChange}
-                  className="w-full pl-12 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-white transition-colors"
+                  className="w-full px-4 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-white transition-colors"
                   placeholder="Enter your password"
                   required
                   minLength={6}

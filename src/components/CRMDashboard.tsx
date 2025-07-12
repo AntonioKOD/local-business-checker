@@ -7,16 +7,12 @@ import { motion } from 'framer-motion';
 import { 
   Users, 
   Building2, 
-  
   TrendingUp, 
- 
-  Search, 
   Plus,
   Download,
   Upload,
   Activity,
   Target,
-
 } from 'lucide-react';
 import CRMModal from './CRMModal';
 
@@ -451,14 +447,13 @@ const CRMDashboard = ({ currentUser }: { currentUser: { id: string; email: strin
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <h3 className="text-lg font-semibold text-gray-900">Clients</h3>
               <div className="flex items-center space-x-2">
-                <div className="relative">
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <div>
                   <input
                     type="text"
                     placeholder="Search clients..."
                     value={filter.search}
                     onChange={(e) => setFilter({ ...filter, search: e.target.value })}
-                    className="pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
                 <select
@@ -535,14 +530,13 @@ const CRMDashboard = ({ currentUser }: { currentUser: { id: string; email: strin
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <h3 className="text-lg font-semibold text-gray-900">Contacts</h3>
               <div className="flex items-center space-x-2">
-                <div className="relative">
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <div>
                   <input
                     type="text"
                     placeholder="Search contacts..."
                     value={filter.search}
                     onChange={(e) => setFilter({ ...filter, search: e.target.value })}
-                    className="pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
                 <button 
@@ -670,14 +664,13 @@ const CRMDashboard = ({ currentUser }: { currentUser: { id: string; email: strin
                 </p>
               </div>
               <div className="flex items-center space-x-2">
-                <div className="relative">
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <div>
                   <input
                     type="text"
                     placeholder="Search leads..."
                     value={filter.search}
                     onChange={(e) => setFilter({ ...filter, search: e.target.value })}
-                    className="pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
                 <select

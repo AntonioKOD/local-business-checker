@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Users, Mail, Calendar, TrendingUp, Search } from 'lucide-react';
+import { Users, Mail, Calendar, TrendingUp } from 'lucide-react';
 
 interface Lead {
   id: string;
@@ -125,14 +125,13 @@ const UserLeads = ({ currentUser }: { currentUser: { id: string; email: string; 
           <p className="text-gray-600">Manage leads from your funnels</p>
         </div>
         <div className="flex items-center space-x-2">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <div>
             <input
               type="text"
               placeholder="Search leads..."
               value={filter.search}
               onChange={(e) => setFilter({ ...filter, search: e.target.value })}
-              className="pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
           <select
