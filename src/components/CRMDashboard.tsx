@@ -1,24 +1,22 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Users, 
   Building2, 
-  Phone, 
-  Calendar, 
+  
   TrendingUp, 
-  Filter, 
+ 
   Search, 
   Plus,
   Download,
   Upload,
   Activity,
   Target,
-  DollarSign,
-  MapPin,
-  Mail,
-  Clock
+
 } from 'lucide-react';
 import CRMModal from './CRMModal';
 
@@ -97,13 +95,33 @@ const CRMDashboard = ({ currentUser }: { currentUser: { id: string; email: strin
   const [modalType, setModalType] = useState<'client' | 'contact'>('client');
   const [modalLoading, setModalLoading] = useState(false);
 
-  useEffect(() => {
-    if (currentUser) {
-      fetchCRMData();
-    }
-  }, [currentUser]);
+  const calculateStats = useCallback((leads: any[]) => {
+    const now = new Date();
+    const thisMonth = now.getMonth();
+    const thisYear = now.getFullYear();
 
-  const fetchCRMData = async () => {
+    const newThisMonth = clients.filter(client => {
+      const clientDate = new Date(client.lastContact);
+      return clientDate.getMonth() === thisMonth && clientDate.getFullYear() === thisYear;
+    }).length;
+
+    const activeClients = clients.filter(client => client.status !== 'inactive').length;
+    const customers = clients.filter(client => client.status === 'customer').length;
+    const conversionRate = clients.length > 0 ? (customers / clients.length) * 100 : 0;
+
+    setStats({
+      totalClients: clients.length,
+      totalContacts: contacts.length,
+      totalActivities: activities.length,
+      totalLeads: leads.length,
+      activeClients,
+      newThisMonth,
+      totalRevenue: '$0', // Would calculate from deals/opportunities
+      conversionRate: Math.round(conversionRate),
+    });
+  }, [clients, contacts, activities]);
+
+  const fetchCRMData = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -141,33 +159,13 @@ const CRMDashboard = ({ currentUser }: { currentUser: { id: string; email: strin
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentUser?.id, calculateStats]);
 
-  const calculateStats = (leads: any[]) => {
-    const now = new Date();
-    const thisMonth = now.getMonth();
-    const thisYear = now.getFullYear();
-
-    const newThisMonth = clients.filter(client => {
-      const clientDate = new Date(client.lastContact);
-      return clientDate.getMonth() === thisMonth && clientDate.getFullYear() === thisYear;
-    }).length;
-
-    const activeClients = clients.filter(client => client.status !== 'inactive').length;
-    const customers = clients.filter(client => client.status === 'customer').length;
-    const conversionRate = clients.length > 0 ? (customers / clients.length) * 100 : 0;
-
-    setStats({
-      totalClients: clients.length,
-      totalContacts: contacts.length,
-      totalActivities: activities.length,
-      totalLeads: leads.length,
-      activeClients,
-      newThisMonth,
-      totalRevenue: '$0', // Would calculate from deals/opportunities
-      conversionRate: Math.round(conversionRate),
-    });
-  };
+  useEffect(() => {
+    if (currentUser) {
+      fetchCRMData();
+    }
+  }, [currentUser, fetchCRMData]);
 
   const handleHubSpotImport = async (apiKey: string, importType: string) => {
     try {

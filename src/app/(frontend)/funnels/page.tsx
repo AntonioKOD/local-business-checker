@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Plus, Briefcase, Eye, Edit, Trash2, Copy, ExternalLink, Calendar, Users, TrendingUp, Settings, Globe, EyeOff, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Plus, Briefcase, Eye, Edit, Trash2, Copy,  Calendar, Globe, EyeOff, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 
 interface Funnel {
@@ -32,6 +33,24 @@ export default function FunnelsPage() {
   const [error, setError] = useState<string | null>(null);
   const [updatingFunnel, setUpdatingFunnel] = useState<string | null>(null);
 
+  const fetchFunnels = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/funnels?owner=' + currentUser?.id);
+      if (response.ok) {
+        const data = await response.json();
+        setFunnels(data.funnels || []);
+      } else {
+        setError('Failed to fetch funnels');
+      }
+    } catch (error) {
+      console.error('Error fetching funnels:', error);
+      setError('Failed to fetch funnels');
+    } finally {
+      setLoading(false);
+    }
+  }, [currentUser?.id]);
+
   // Check authentication status on mount
   useEffect(() => {
     const checkAuthStatus = async () => {
@@ -60,25 +79,7 @@ export default function FunnelsPage() {
     if (currentUser) {
       fetchFunnels();
     }
-  }, [currentUser]);
-
-  const fetchFunnels = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('/api/funnels?owner=' + currentUser?.id);
-      if (response.ok) {
-        const data = await response.json();
-        setFunnels(data.funnels || []);
-      } else {
-        setError('Failed to fetch funnels');
-      }
-    } catch (error) {
-      console.error('Error fetching funnels:', error);
-      setError('Failed to fetch funnels');
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [currentUser, fetchFunnels]);
 
   const handleDeleteFunnel = async (funnelId: string) => {
     if (!confirm('Are you sure you want to delete this funnel? This action cannot be undone.')) {

@@ -1,32 +1,27 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { 
   ArrowRight, 
-  CheckCircle, 
+ 
   Star, 
   Users, 
   TrendingUp, 
-  Zap, 
-  Sparkles,
+  
   Play,
   Pause,
   RotateCcw,
-  Eye,
+  
   Settings,
   Copy,
   Trash2,
-  Plus,
-  Target,
-  Award,
+ 
   Shield,
   Clock,
-  DollarSign,
-  Percent,
-  Globe,
-  Smartphone,
-  Monitor,
-  Tablet
+
 } from 'lucide-react';
 
 interface FunnelLandingPageProps {
@@ -184,10 +179,12 @@ const FunnelLandingPage: React.FC<FunnelLandingPageProps> = ({
               {testimonials.map((testimonial, index) => (
                 <div key={index} className="bg-white p-6 rounded-lg shadow-lg hover-lift">
                   <div className="flex items-center mb-4">
-                    <img 
+                    <Image 
                       src={testimonial.avatar} 
                       alt={testimonial.name}
-                      className="w-12 h-12 rounded-full mr-4"
+                      width={48}
+                      height={48}
+                      className="rounded-full mr-4"
                     />
                     <div>
                       <h4 className="font-semibold">{testimonial.name}</h4>
@@ -407,10 +404,12 @@ const FunnelLandingPage: React.FC<FunnelLandingPageProps> = ({
               {testimonials.map((testimonial, index) => (
                 <div key={index} className="bg-gray-50 p-6 rounded-lg shadow-lg hover-lift">
                   <div className="flex items-center mb-4">
-                    <img 
+                    <Image 
                       src={testimonial.avatar} 
                       alt={testimonial.name}
-                      className="w-12 h-12 rounded-full mr-4"
+                      width={48}
+                      height={48}
+                      className="rounded-full mr-4"
                     />
                     <div>
                       <h4 className="font-semibold">{testimonial.name}</h4>

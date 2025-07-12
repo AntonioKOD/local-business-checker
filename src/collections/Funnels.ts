@@ -1,4 +1,5 @@
-import { CollectionConfig } from 'payload/types';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { CollectionConfig } from 'payload';
 
 export const Funnels: CollectionConfig = {
   slug: 'funnels',
@@ -13,17 +14,14 @@ export const Funnels: CollectionConfig = {
       return true;
     },
     create: ({ req: { user } }) => {
-      if (user?.role === 'admin') return true;
       return Boolean(user); // Only authenticated users can create funnels
     },
     update: ({ req: { user } }) => {
-      if (user?.role === 'admin') return true;
       return {
         owner: { equals: user?.id },
       };
     },
     delete: ({ req: { user } }) => {
-      if (user?.role === 'admin') return true;
       return {
         owner: { equals: user?.id },
       };

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export interface Business {
   name: string;
   place_id: string;
@@ -25,6 +27,16 @@ export interface Business {
     youtube?: string[];
     yelp?: string[];
   };
+  // Additional fields from API
+  claimed?: boolean;
+  review_url?: string;
+  featured_image?: string;
+  google_maps_url?: string;
+  google_knowledge_url?: string;
+  cid?: string;
+  kgmid?: string;
+  meta?: any;
+  tracking_ids?: any;
 }
 
 export interface BusinessInsights {
@@ -577,7 +589,7 @@ export class FreeClientCompass {
 
     // Identify top competitors (businesses with high ratings and websites)
     const topCompetitors = businesses
-      .filter(b => b.rating >= 4.0 && b.website)
+      .filter(b => Number(b.rating) >= 4.0 && b.website)
       .sort((a, b) => Number(b.rating) - Number(a.rating))
       .slice(0, 5);
 

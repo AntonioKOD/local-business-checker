@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { getPayload } from 'payload';
 import config from '@payload-config';
@@ -11,7 +12,7 @@ export async function POST(request: NextRequest) {
 
     // Get the lead data
     const lead = await payload.findByID({
-      collection: 'clientleads',
+      collection: 'clientleads' as any,
       id: leadId,
     });
 
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
     };
 
     const client = await payload.create({
-      collection: 'clients',
+      collection: 'clients' as any,
       data: clientData,
     });
 
@@ -63,13 +64,13 @@ export async function POST(request: NextRequest) {
     };
 
     const contact = await payload.create({
-      collection: 'contacts',
+      collection: 'contacts' as any,
       data: contactData,
     });
 
     // Update the lead status to converted
     await payload.update({
-      collection: 'clientleads',
+      collection: 'clientleads' as any,
       id: leadId,
       data: {
         status: 'converted',

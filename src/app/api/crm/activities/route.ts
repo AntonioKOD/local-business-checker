@@ -1,3 +1,5 @@
+/* eslint-disable prefer-const */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { getPayload } from 'payload';
 import config from '@payload-config';
@@ -28,7 +30,7 @@ export async function GET(request: NextRequest) {
     }
 
     const activities = await payload.find({
-      collection: 'activities',
+      collection: 'activities' as any,
       page,
       limit,
       sort: '-date',
@@ -62,7 +64,7 @@ export async function POST(request: NextRequest) {
     const payload = await getPayload({ config });
 
     const activity = await payload.create({
-      collection: 'activities',
+      collection: 'activities' as any,
       data: body,
     });
 

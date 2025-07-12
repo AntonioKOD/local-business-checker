@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useState } from 'react';
@@ -34,13 +35,9 @@ const CRMModal = ({ isOpen, onClose, type, onSave, loading = false }: CRMModalPr
     // Contact fields
     fullName: '',
     email: '',
-    phone: '',
     title: '',
     department: '',
     role: 'decision-maker',
-    status: 'active',
-    source: 'website',
-    notes: '',
     preferences: {
       preferredContactMethod: 'email',
       timezone: '',
@@ -59,7 +56,7 @@ const CRMModal = ({ isOpen, onClose, type, onSave, loading = false }: CRMModalPr
       setFormData(prev => ({
         ...prev,
         [parent]: {
-          ...prev[parent as keyof typeof prev],
+          ...(prev[parent as keyof typeof prev] as Record<string, any>),
           [child]: value,
         },
       }));

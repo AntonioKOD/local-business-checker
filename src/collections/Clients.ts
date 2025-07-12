@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { CollectionConfig } from 'payload';
 
 export const Clients: CollectionConfig = {
@@ -166,7 +167,8 @@ export const Clients: CollectionConfig = {
     {
       name: 'owner',
       type: 'relationship',
-      relationTo: 'users',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      relationTo: 'users' as any,
       admin: {
         description: 'Assigned account manager',
       },

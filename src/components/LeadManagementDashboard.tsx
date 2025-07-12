@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 
 interface Lead {
@@ -47,11 +47,7 @@ const LeadManagementDashboard = () => {
     source: '',
   });
 
-  useEffect(() => {
-    fetchLeads();
-  }, []);
-
-  const fetchLeads = async () => {
+  const fetchLeads = useCallback(async () => {
     try {
       const response = await fetch('/api/leads');
       if (response.ok) {
@@ -64,7 +60,11 @@ const LeadManagementDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchLeads();
+  }, [fetchLeads]);
 
   const calculateStats = (leadData: Lead[]) => {
     const total = leadData.length;

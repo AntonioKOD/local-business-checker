@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { getPayload } from 'payload';
 import config from '@/payload.config';
@@ -12,7 +13,7 @@ export async function POST(
 
     // Get current funnel
     const funnel = await payload.findByID({
-      collection: 'funnels',
+      collection: 'funnels' as any,
       id: resolvedParams.id,
     });
 
@@ -30,7 +31,7 @@ export async function POST(
     const conversionRate = currentViews > 0 ? (newLeads / currentViews) * 100 : 0;
 
     await payload.update({
-      collection: 'funnels',
+      collection: 'funnels' as any,
       id: resolvedParams.id,
       data: {
         analytics: {

@@ -1,9 +1,12 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { CheckCircle, Star } from 'lucide-react';
+import Image from 'next/image';
 
 interface Block {
   id: string;
@@ -49,11 +52,7 @@ export default function FunnelViewer() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  useEffect(() => {
-    fetchFunnel();
-  }, [slug]);
-
-  const fetchFunnel = async () => {
+  const fetchFunnel = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch(`/api/funnels/${slug}?bySlug=true`);
@@ -70,7 +69,11 @@ export default function FunnelViewer() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [slug]);
+
+  useEffect(() => {
+    fetchFunnel();
+  }, [fetchFunnel]);
 
   const handleFormSubmit = async (e: React.FormEvent, formBlock: Block) => {
     e.preventDefault();
@@ -152,10 +155,12 @@ export default function FunnelViewer() {
               {block.content.testimonials?.map((testimonial: any, index: number) => (
                 <div key={index} className="bg-white p-6 rounded-lg shadow-sm">
                   <div className="flex items-center mb-4">
-                    <img 
+                    <Image 
                       src={testimonial.avatar} 
                       alt={testimonial.name}
-                      className="w-12 h-12 rounded-full mr-4"
+                      width={48}
+                      height={48}
+                      className="rounded-full mr-4"
                     />
                     <div>
                       <h4 className="font-semibold">{testimonial.name}</h4>
@@ -188,7 +193,7 @@ export default function FunnelViewer() {
               >
                 <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
                 <h3 className="text-2xl font-bold text-green-800 mb-2">Thank You!</h3>
-                <p className="text-green-700">Your information has been submitted successfully. We'll be in touch soon!</p>
+                <p className="text-green-700">Your information has been submitted successfully. We&apos;ll be in touch soon!</p>
               </motion.div>
             ) : (
               <form onSubmit={(e) => handleFormSubmit(e, block)} className="space-y-4">

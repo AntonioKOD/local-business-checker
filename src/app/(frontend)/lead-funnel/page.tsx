@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useState } from 'react';
@@ -143,7 +144,7 @@ const LeadFunnel = () => {
               <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-lg">
                 <div className="text-blue-600 text-2xl mb-2">📊</div>
                 <h3 className="font-semibold text-gray-900 mb-2">Market Analysis</h3>
-                <p className="text-gray-600">Discover your competitors' weaknesses and market gaps</p>
+                <p className="text-gray-600">Discover your competitors&quot; weaknesses and market gaps</p>
               </div>
               <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-lg">
                 <div className="text-green-600 text-2xl mb-2">🎯</div>
@@ -285,7 +286,7 @@ const LeadFunnel = () => {
 
             <div className="bg-white p-6 rounded-lg shadow-lg space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">What's your marketing budget range?</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">What&quot;s your marketing budget range?</label>
                 <select
                   value={leadData.budget}
                   onChange={(e) => updateLeadData('budget', e.target.value)}
@@ -365,7 +366,7 @@ const LeadFunnel = () => {
               </div>
 
               <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                <h3 className="font-semibold text-blue-900 mb-2">What You'll Get:</h3>
+                <h3 className="font-semibold text-blue-900 mb-2">What You&quot;ll Get:</h3>
                 <ul className="text-blue-800 space-y-1">
                   <li>• Comprehensive market analysis report</li>
                   <li>• Competitor analysis and opportunities</li>
@@ -388,10 +389,10 @@ const LeadFunnel = () => {
             <div className="text-green-600 text-6xl mb-4">✅</div>
             <h2 className="text-3xl font-bold text-gray-900">Thank You!</h2>
             <p className="text-lg text-gray-600">
-              Your market analysis is being prepared. You'll receive it within the next 24 hours.
+              Your market analysis is being prepared. You&quot;ll receive it within the next 24 hours.
             </p>
             <div className="bg-white p-6 rounded-lg shadow-lg">
-              <h3 className="font-semibold text-gray-900 mb-4">What's Next:</h3>
+              <h3 className="font-semibold text-gray-900 mb-4">What&quot;s Next:</h3>
               <div className="space-y-3 text-left">
                 <div className="flex items-center space-x-3">
                   <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm">1</div>

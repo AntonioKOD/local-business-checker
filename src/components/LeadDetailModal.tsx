@@ -20,6 +20,7 @@ interface Lead {
   status: 'new' | 'contacted' | 'qualified' | 'proposal-sent' | 'negotiating' | 'closed-won' | 'closed-lost' | 'unqualified';
   notes?: string;
   submittedAt: string;
+  isWatched?: boolean;
   owner?: {
     id: string;
     [key: string]: unknown;

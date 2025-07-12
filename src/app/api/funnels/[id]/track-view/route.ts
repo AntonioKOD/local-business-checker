@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { getPayload } from 'payload';
 import config from '@/payload.config';
@@ -12,7 +13,7 @@ export async function POST(
 
     // Get current funnel
     const funnel = await payload.findByID({
-      collection: 'funnels',
+      collection: 'funnels' as any,
       id: resolvedParams.id,
     });
 
@@ -32,7 +33,7 @@ export async function POST(
     while (retries > 0) {
       try {
         await payload.update({
-          collection: 'funnels',
+          collection: 'funnels' as any,
           id: resolvedParams.id,
           data: {
             analytics: {
@@ -40,7 +41,7 @@ export async function POST(
               leads: currentLeads,
               conversionRate: Math.round(conversionRate * 100) / 100,
             },
-          },
+          } as any,
         });
         break; // Success, exit retry loop
       } catch (error: any) {

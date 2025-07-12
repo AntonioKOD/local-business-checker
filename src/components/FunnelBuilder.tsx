@@ -1,9 +1,11 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useMemo} from 'react';
 import { useRouter } from 'next/navigation';
-import { Editor } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
+import Image from 'next/image';
+
 import {
   DndContext,
   closestCenter,
@@ -24,28 +26,13 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { 
-  Plus, 
+
   Eye, 
   Settings, 
-  Palette, 
-  Type, 
-  Image, 
-  Video, 
-  FileText,
-  Mail,
-  Phone,
-  MapPin,
+  
   Star,
-  Users,
-  TrendingUp,
-  Target,
-  Zap,
-  Sparkles,
-  ArrowRight,
-  CheckCircle,
-  Play,
-  Pause,
-  RotateCcw,
+ 
+
   Save,
   EyeOff,
   Smartphone,
@@ -190,7 +177,7 @@ const FunnelBuilder: React.FC<FunnelBuilderProps> = ({ funnelId, initialData }) 
     })
   );
 
-  const blockTemplates = {
+  const blockTemplates = useMemo(() => ({
     hero: {
       content: {
         headline: 'Transform Your Business',
@@ -277,7 +264,7 @@ const FunnelBuilder: React.FC<FunnelBuilderProps> = ({ funnelId, initialData }) 
         animation: 'slideInRight'
       }
     }
-  };
+  }), []);
 
   const addBlock = useCallback((type: string) => {
     const newBlock: Block = {
@@ -295,7 +282,7 @@ const FunnelBuilder: React.FC<FunnelBuilderProps> = ({ funnelId, initialData }) 
     };
     setBlocks(prev => [...prev, newBlock]);
     setSelectedBlock(newBlock.id);
-  }, []);
+  }, [blockTemplates]);
 
   const updateBlock = useCallback((blockId: string, updates: Partial<Block>) => {
     setBlocks(prev => prev.map(block => 
@@ -381,10 +368,12 @@ const FunnelBuilder: React.FC<FunnelBuilderProps> = ({ funnelId, initialData }) 
               {block.content.testimonials?.map((testimonial: any, index: number) => (
                 <div key={index} className="bg-white p-6 rounded-lg shadow-sm">
                   <div className="flex items-center mb-4">
-                    <img 
+                    <Image 
                       src={testimonial.avatar} 
                       alt={testimonial.name}
-                      className="w-12 h-12 rounded-full mr-4"
+                      width={48}
+                      height={48}
+                      className="rounded-full mr-4"
                     />
                     <div>
                       <h4 className="font-semibold">{testimonial.name}</h4>
@@ -667,7 +656,7 @@ const FunnelBuilder: React.FC<FunnelBuilderProps> = ({ funnelId, initialData }) 
         </div>
 
         {/* Block Settings Panel */}
-        {showBlockSettings && selectedBlockData && (
+        {showBlockSettings && selectedBlockData && selectedBlock && (
           <BlockSettings
             block={selectedBlockData}
             onUpdate={(updates) => updateBlock(selectedBlock, updates)}

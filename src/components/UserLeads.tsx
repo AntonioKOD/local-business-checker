@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Users, Mail, Calendar, TrendingUp, Filter, Search } from 'lucide-react';
+import { Users, Mail, Calendar, TrendingUp, Search } from 'lucide-react';
 
 interface Lead {
   id: string;
@@ -33,14 +33,7 @@ const UserLeads = ({ currentUser }: { currentUser: { id: string; email: string; 
     search: '',
   });
 
-  useEffect(() => {
-    if (currentUser) {
-      fetchUserFunnels();
-      fetchUserLeads();
-    }
-  }, [currentUser]);
-
-  const fetchUserFunnels = async () => {
+  const fetchUserFunnels = useCallback(async () => {
     try {
       const response = await fetch('/api/funnels');
       if (response.ok) {
@@ -52,9 +45,9 @@ const UserLeads = ({ currentUser }: { currentUser: { id: string; email: string; 
     } catch (error) {
       console.error('Error fetching user funnels:', error);
     }
-  };
+  }, [currentUser?.id]);
 
-  const fetchUserLeads = async () => {
+  const fetchUserLeads = useCallback(async () => {
     try {
       const response = await fetch('/api/leads');
       if (response.ok) {
@@ -71,7 +64,14 @@ const UserLeads = ({ currentUser }: { currentUser: { id: string; email: string; 
     } finally {
       setLoading(false);
     }
-  };
+  }, [userFunnels]);
+
+  useEffect(() => {
+    if (currentUser) {
+      fetchUserFunnels();
+      fetchUserLeads();
+    }
+  }, [currentUser, fetchUserFunnels, fetchUserLeads]);
 
   const filteredLeads = leads.filter(lead => {
     if (filter.status && lead.status !== filter.status) return false;

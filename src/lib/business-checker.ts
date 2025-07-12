@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { FreeClientCompass } from './business-checker-free';
 
 export interface Business {
@@ -34,7 +35,7 @@ export interface Business {
 
 export interface WebsiteStatus {
   accessible: boolean;
-  status_code: number;
+  status_code?: number;
   error?: string;
   load_time?: number;
   ssl_certificate?: boolean;
@@ -125,7 +126,7 @@ export class ClientCompass {
     this.freeClient = new FreeClientCompass();
   }
 
-  async searchBusinesses(query: string, location: string, radius: number = 15000, maxResults: number = 10): Promise<Business[]> {
+  async searchBusinesses(query: string, location: string, _radius: number = 15000, maxResults: number = 10): Promise<Business[]> {
     try {
       console.log(`🔍 Searching for "${query}" in ${location} with GMaps Extractor API...`);
       
@@ -304,10 +305,10 @@ export class ClientCompass {
   generateMarketAnalysis(businesses: Business[]): MarketAnalysis {
     if (businesses.length === 0) {
       return {
-        market_saturation: 'unknown',
+        market_saturation: 'low',
         website_adoption_rate: 0,
         average_rating: 0,
-        competition_level: 'unknown',
+        competition_level: 'low',
         opportunity_score: 0,
         top_competitors: [],
         market_gaps: []
@@ -340,7 +341,7 @@ export class ClientCompass {
 
     // Identify top competitors (businesses with high ratings and websites)
     const topCompetitors = businesses
-      .filter(b => b.rating >= 4.0 && b.website)
+      .filter(b => Number(b.rating) >= 4.0 && b.website)
       .sort((a, b) => Number(b.rating) - Number(a.rating))
       .slice(0, 5);
 

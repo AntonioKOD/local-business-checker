@@ -1,7 +1,29 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
-import { FreeClientCompass, SearchResults as BaseSearchResults, SearchFilters } from '@/lib/business-checker-free';
+import { FreeClientCompass, SearchFilters } from '@/lib/business-checker-free';
 import { getPayload } from 'payload';
 import config from '@/payload.config';
+
+// Base SearchResults interface
+interface BaseSearchResults {
+  businesses: any[];
+  statistics: {
+    total_businesses: number;
+    businesses_with_websites: number;
+    accessible_websites: number;
+    no_website_count: number;
+    website_percentage: number;
+    accessible_percentage: number;
+  };
+  payment_info: {
+    is_free_user: boolean;
+    total_found: number;
+    showing: number;
+    remaining: number;
+    upgrade_price: number;
+    searches_remaining: number | null;
+  };
+}
 
 // Extended SearchResults interface with premium features
 interface SearchResults extends BaseSearchResults {
@@ -14,7 +36,6 @@ interface SearchResults extends BaseSearchResults {
       average_rating: number;
       competition_level: string;
       opportunity_score: number;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       top_competitors: any[];
       market_gaps: string[];
     } | null;
@@ -151,7 +172,6 @@ export async function POST(request: NextRequest) {
         });
       }
       if (minLeadScore && minLeadScore > 0) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         results = results.filter(business => ((business as any).lead_score || 0) >= minLeadScore);
       }
     }
@@ -206,7 +226,6 @@ export async function POST(request: NextRequest) {
     const averageRating = ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
     
     // Count high opportunity businesses (lead score > 70)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const highOpportunityCount = results.filter(b => (b as any).lead_score && (b as any).lead_score > 70).length;
     
     // Generate market analysis for premium users

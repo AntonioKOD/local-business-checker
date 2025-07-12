@@ -1,11 +1,15 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import React, { useEffect, useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
+
 import Document from '@tiptap/extension-document';
 import Paragraph from '@tiptap/extension-paragraph';
 import Text from '@tiptap/extension-text';
+import Bold from '@tiptap/extension-bold';
+import Italic from '@tiptap/extension-italic';
 import Heading from '@tiptap/extension-heading';
 import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
@@ -18,8 +22,8 @@ import Collaboration from '@tiptap/extension-collaboration';
 import * as Y from 'yjs';
 import { TiptapCollabProvider } from '@hocuspocus/provider';
 import { 
-  Bold, 
-  Italic, 
+  Bold as BoldIcon, 
+  Italic as ItalicIcon, 
   Underline, 
   Heading1, 
   Heading2, 
@@ -66,6 +70,8 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
       Document,
       Paragraph,
       Text,
+      Bold,
+      Italic,
       Heading.configure({
         levels: [1, 2, 3],
       }),
@@ -162,18 +168,18 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
           {/* Text Formatting */}
           <div className="flex items-center gap-1 border-r border-gray-300 pr-2">
             <button
-              onClick={() => editor.chain().focus().toggleBold().run()}
+              onClick={() => editor.chain().focus().setBold().run()}
               className={`p-2 rounded hover:bg-gray-200 ${editor.isActive('bold') ? 'bg-gray-200' : ''}`}
               title="Bold"
             >
-              <Bold size={16} />
+              <BoldIcon size={16} />
             </button>
             <button
               onClick={() => editor.chain().focus().toggleItalic().run()}
               className={`p-2 rounded hover:bg-gray-200 ${editor.isActive('italic') ? 'bg-gray-200' : ''}`}
               title="Italic"
             >
-              <Italic size={16} />
+              <ItalicIcon size={16} />
             </button>
             <button
               onClick={() => editor.chain().focus().toggleUnderline().run()}

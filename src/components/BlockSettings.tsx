@@ -1,38 +1,18 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import React, { useState } from 'react';
 import { 
   X, 
-  Palette, 
-  Type, 
-  Image, 
-  Settings, 
-  Eye,
+
   Copy,
   Trash2,
-  Move,
-  Layers,
-  Sparkles,
-  Zap,
-  Target,
-  TrendingUp,
-  Users,
-  Star,
-  Mail,
-  Phone,
-  MapPin,
-  Building,
-  Globe,
-  Calendar,
-  Clock,
-  DollarSign,
-  Percent,
-  CheckCircle,
-  AlertCircle,
-  Info
+
+
 } from 'lucide-react';
 
 interface BlockSettingsProps {
+  
   block: any;
   onUpdate: (updates: any) => void;
   onClose: () => void;

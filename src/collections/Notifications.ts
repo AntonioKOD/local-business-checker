@@ -1,3 +1,4 @@
+
 import { CollectionConfig } from 'payload';
 
 export const Notifications: CollectionConfig = {
@@ -28,6 +29,7 @@ export const Notifications: CollectionConfig = {
     {
       name: 'lead',
       type: 'relationship',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       relationTo: 'clientleads' as any,
       required: true,
       admin: {

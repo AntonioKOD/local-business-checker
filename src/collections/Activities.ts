@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { CollectionConfig } from 'payload';
 
 export const Activities: CollectionConfig = {
@@ -50,7 +51,7 @@ export const Activities: CollectionConfig = {
     {
       name: 'client',
       type: 'relationship',
-      relationTo: 'clients',
+      relationTo: 'clients' as any,
       admin: {
         description: 'Associated company/client',
       },
@@ -58,7 +59,7 @@ export const Activities: CollectionConfig = {
     {
       name: 'contact',
       type: 'relationship',
-      relationTo: 'contacts',
+      relationTo: 'contacts' as any,
       admin: {
         description: 'Associated contact (optional)',
       },
@@ -66,7 +67,7 @@ export const Activities: CollectionConfig = {
     {
       name: 'lead',
       type: 'relationship',
-      relationTo: 'clientleads',
+      relationTo: 'clientleads' as any,
       admin: {
         description: 'Associated lead (optional)',
       },
@@ -118,7 +119,7 @@ export const Activities: CollectionConfig = {
     {
       name: 'assignedTo',
       type: 'relationship',
-      relationTo: 'users',
+      relationTo: 'users' as any,
       admin: {
         description: 'Person assigned to this activity',
       },
@@ -203,7 +204,7 @@ export const Activities: CollectionConfig = {
         if (operation === 'create' && doc.client) {
           const payload = req.payload;
           await payload.update({
-            collection: 'clients',
+            collection: 'clients' as any,
             id: doc.client,
             data: {
               lastContact: doc.date,
@@ -214,7 +215,7 @@ export const Activities: CollectionConfig = {
         if (operation === 'create' && doc.contact) {
           const payload = req.payload;
           await payload.update({
-            collection: 'contacts',
+            collection: 'contacts' as any,
             id: doc.contact,
             data: {
               lastContact: doc.date,

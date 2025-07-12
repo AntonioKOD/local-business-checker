@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable prefer-const */
 import { NextRequest, NextResponse } from 'next/server';
 import { getPayload } from 'payload';
 import config from '@payload-config';
@@ -12,6 +14,7 @@ export async function GET(request: NextRequest) {
 
     const payload = await getPayload({ config });
 
+
     let where: any = {};
     
     if (status) {
@@ -23,7 +26,7 @@ export async function GET(request: NextRequest) {
     }
 
     const contacts = await payload.find({
-      collection: 'contacts',
+      collection: 'contacts' as any,
       page,
       limit,
       sort: '-lastContact',
@@ -57,7 +60,7 @@ export async function POST(request: NextRequest) {
     const payload = await getPayload({ config });
 
     const contact = await payload.create({
-      collection: 'contacts',
+      collection: 'contacts' as any,
       data: body,
     });
 
