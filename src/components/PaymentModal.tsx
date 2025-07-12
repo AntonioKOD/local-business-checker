@@ -314,11 +314,16 @@ const CheckoutForm: React.FC<{ onSuccess: (user: { id: string; email: string; fi
         <h4 className="font-semibold text-gray-900">What you&apos;ll get:</h4>
         <ul className="space-y-2">
           {[
-            'Unlimited business searches',
-            'Complete website analysis for each business',
-            'Premium analytics dashboard',
-            'Competitor analysis tools',
-            'Priority support'
+            '100 searches per day (vs 1 for free)',
+            'Up to 50 businesses per search (vs 1 for free)',
+            'Advanced search filters (rating, radius, website filtering)',
+            'Business insights & opportunity scoring',
+            'Market analysis & competitor intelligence',
+            'Lead funnel management system',
+            'CRM dashboard (clients, contacts, activities)',
+            'Funnel builder for landing pages',
+            'Export search results to CSV',
+            'Website accessibility checking'
           ].map((feature, index) => (
             <li key={index} className="flex items-center gap-2 text-gray-700">
               <Check className="w-4 h-4 text-green-500" />
