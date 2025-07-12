@@ -183,7 +183,7 @@ export default function FunnelsPage() {
   // If not authenticated, show the page with a message
   if (!currentUser) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <div className="min-h-screen bg-dark-gray text-secondary">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
           <div className="space-y-8">
             {/* Header */}
@@ -191,14 +191,14 @@ export default function FunnelsPage() {
               <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                 <div>
                   <h1 className="text-3xl font-bold text-gray-900 mb-2">Lead Funnels</h1>
-                  <p className="text-gray-600">
+                  <p className="text-gray-700">
                     Create and manage high-converting lead capture funnels
                   </p>
                 </div>
                 <div className="mt-4 md:mt-0 text-white">
                   <Link
                     href="/funnel-builder"
-                    className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl transform hover:scale-105"
+                    className="inline-flex items-center px-6 py-3 bg-accent text-secondary rounded-xl hover:bg-accent/80 transition-colors shadow-lg hover:shadow-xl transform hover:scale-105"
                   >
                     <Plus className="w-5 h-5 mr-2" />
                     Create New Funnel
@@ -228,12 +228,12 @@ export default function FunnelsPage() {
                 <Briefcase className="w-12 h-12 text-gray-400" />
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-4">No Funnels Yet</h3>
-              <p className="text-gray-600 mb-8 max-w-md mx-auto">
+              <p className="text-gray-700 mb-8 max-w-md mx-auto">
                 Create your first lead funnel to start capturing leads and growing your business.
               </p>
               <Link
                 href="/funnel-builder"
-                className="inline-flex items-center px-6 py-3 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl transform hover:scale-105"
+                className="inline-flex items-center px-6 py-3 bg-accent text-secondary rounded-xl hover:bg-accent/80 transition-colors shadow-lg hover:shadow-xl transform hover:scale-105"
               >
                 <Plus className="w-5 h-5 mr-2" />
                 Create Your First Funnel
@@ -246,7 +246,7 @@ export default function FunnelsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-gray-50 text-secondary">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
         <div className="space-y-8">
           {/* Header */}
@@ -254,14 +254,14 @@ export default function FunnelsPage() {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between">
               <div>
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">Lead Funnels</h1>
-                <p className="text-gray-600">
+                <p className="text-gray-700">
                   Create and manage high-converting lead capture funnels
                 </p>
               </div>
               <div className="mt-4 md:mt-0">
                 <Link
                   href="/funnel-builder"
-                  className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl transform hover:scale-105"
+                  className="inline-flex items-center px-6 py-3 bg-white text-secondary rounded-xl hover:bg-accent/80 transition-colors shadow-lg hover:shadow-xl transform hover:scale-105"
                 >
                   <Plus className="w-5 h-5 mr-2" />
                   Create New Funnel
@@ -301,12 +301,12 @@ export default function FunnelsPage() {
                     <Briefcase className="w-12 h-12 text-gray-400" />
                   </div>
                   <h3 className="text-2xl font-bold text-gray-900 mb-4">No Funnels Yet</h3>
-                  <p className="text-gray-600 mb-8 max-w-md mx-auto">
+                  <p className="text-gray-700 mb-8 max-w-md mx-auto">
                     Create your first lead funnel to start capturing leads and growing your business.
                   </p>
                   <Link
                     href="/funnel-builder"
-                    className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl transform hover:scale-105"
+                    className="inline-flex items-center px-6 py-3 bg-white text-white rounded-xl hover:bg-accent/80 transition-colors shadow-lg hover:shadow-xl transform hover:scale-105"
                   >
                     <Plus className="w-5 h-5 mr-2" />
                     Create Your First Funnel
@@ -420,7 +420,7 @@ export default function FunnelsPage() {
                               <Link
                                 href={`/funnel/${funnel.slug}`}
                                 target="_blank"
-                                className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                                className="p-2 text-accent hover:text-accent/80 hover:bg-accent/10 rounded-lg transition-colors"
                                 title="View Funnel"
                               >
                                 <Eye className="w-4 h-4" />

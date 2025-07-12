@@ -135,7 +135,7 @@ const LeadFunnel = () => {
               <h1 className="text-4xl font-bold text-gray-900 mb-4">
                 Transform Your Business with Data-Driven Insights
               </h1>
-              <p className="text-xl text-gray-600 mb-8">
+              <p className="text-xl text-gray-700 mb-8">
                 Get a comprehensive analysis of your local market and discover opportunities to dominate your competition
               </p>
             </div>
@@ -417,7 +417,7 @@ const LeadFunnel = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gray-50 text-secondary">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           {/* Progress Bar */}
@@ -472,7 +472,7 @@ const LeadFunnel = () => {
                   (currentStep === 2 && !leadData.businessType) ||
                   (currentStep === 4 && (!leadData.budget || !leadData.timeline))
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700'
+                    : 'bg-accent text-secondary py-3 rounded-lg font-semibold hover:bg-accent/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
                 }`}
               >
                 {currentStep === 5 ? 'Get My Analysis' : 'Continue'}

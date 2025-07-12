@@ -98,7 +98,7 @@ export default function RootLayout(props: { children: React.ReactNode }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
       <body>
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <div className="min-h-screen bg-gray-50 text-secondary">
           <ModernNavbar
             currentUser={currentUser}
             onLoginClick={() => setShowAuthModal(true)}

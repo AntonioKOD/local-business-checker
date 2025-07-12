@@ -36,7 +36,7 @@ export default function CRMPage() {
   // Show loading while checking authentication
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 text-secondary flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading...</p>
@@ -48,16 +48,16 @@ export default function CRMPage() {
   // If not authenticated, show error message instead of redirecting
   if (authError) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 text-secondary flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-8">
           <div className="bg-red-50 border border-red-200 rounded-xl p-6 mb-6">
             <h2 className="text-xl font-bold text-red-800 mb-2">Authentication Required</h2>
-            <p className="text-red-700 mb-4">
+            <p className="text-gray-700 mb-4">
               {authError || 'You need to be logged in to access the CRM dashboard.'}
             </p>
             <button
               onClick={() => window.location.href = '/'}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+              className="bg-accent hover:bg-accent/80 text-secondary px-6 py-2 rounded-lg font-medium transition-colors"
             >
               Go to Home
             </button>
@@ -68,7 +68,7 @@ export default function CRMPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-gray-50 text-secondary">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
         <CRMDashboard />
       </div>

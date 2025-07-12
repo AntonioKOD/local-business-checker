@@ -318,7 +318,7 @@ export default function ClientCompass() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-gray-50 text-secondary">
       {/* Structured Data for SEO */}
       <script
         type="application/ld+json"
@@ -464,7 +464,7 @@ export default function ClientCompass() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold py-4 px-8 rounded-xl shadow-lg transform hover:scale-105 disabled:hover:scale-100 transition-all duration-200"
+                className="w-full bg-accent text-secondary font-semibold py-4 px-8 rounded-xl shadow-lg transform hover:scale-105 hover:bg-accent/80 disabled:bg-gray-500 disabled:text-gray-300 transition-all duration-200"
               >
                 {loading ? (
                   <div className="flex items-center justify-center space-x-2">
@@ -534,7 +534,7 @@ export default function ClientCompass() {
                 <div className="mt-6 flex justify-center">
                   <button
                     onClick={exportToCSV}
-                    className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium rounded-xl shadow-lg transform hover:scale-105 transition-all duration-200"
+                    className="inline-flex items-center px-6 py-3 bg-accent text-secondary font-medium rounded-xl shadow-lg transform hover:scale-105 hover:bg-accent/80 transition-all duration-200"
                   >
                     <Download className="w-5 h-5 mr-2" />
                     Export to CSV
@@ -558,7 +558,7 @@ export default function ClientCompass() {
                       {results.payment_info.is_free_user && results.payment_info.remaining > 0 && (
                         <button
                           onClick={() => window.location.href = '/'}
-                          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-md transform hover:scale-105 transition-all duration-200"
+                          className="bg-gold text-black px-4 py-2 rounded-lg text-sm font-medium shadow-md transform hover:scale-105 transition-all duration-200"
                         >
                           Upgrade - $7
                         </button>

@@ -8,8 +8,19 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
+        background: "#000000",
+        foreground: "#FFFFFF",
+        primary: "#000000",
+        secondary: "#FFFFFF",
+        accent: "#3B82F6",
+        gold: "#FFD600",
+        'dark-gray': "#18181B",
+        // Tailwind default colors
+        blue: require('tailwindcss/colors').blue,
+        gray: require('tailwindcss/colors').gray,
+        yellow: require('tailwindcss/colors').yellow,
+        green: require('tailwindcss/colors').green,
+        purple: require('tailwindcss/colors').purple,
       },
       animation: {
         'float': 'float 6s ease-in-out infinite',

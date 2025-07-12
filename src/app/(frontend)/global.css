@@ -143,9 +143,7 @@
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  @apply bg-gray-50 text-secondary font-sans;
 }
 
 /* Animation delay utilities */
@@ -591,7 +589,7 @@ input[type="button"]:hover {
 .modal,
 .overlay,
 .dialog {
-  color: #000000 !important;
+  /* color: #000000 !important; */
 }
 
 .modal h1,
@@ -600,20 +598,20 @@ input[type="button"]:hover {
 .modal h4,
 .modal h5,
 .modal h6 {
-  color: #000000 !important;
+  /* color: #000000 !important; */
 }
 
 .modal p,
 .modal span,
 .modal div {
-  color: #000000 !important;
+  /* color: #000000 !important; */
 }
 
 /* Card and container text */
 .card,
 .container,
 .section {
-  color: #000000 !important;
+  /* color: #000000 !important; */
 }
 
 .card h1,
@@ -622,56 +620,56 @@ input[type="button"]:hover {
 .card h4,
 .card h5,
 .card h6 {
-  color: #000000 !important;
+  /* color: #000000 !important; */
 }
 
 .card p,
 .card span,
 .card div {
-  color: #000000 !important;
+  /* color: #000000 !important; */
 }
 
 /* Navigation and header text */
 nav,
 header,
 .navbar {
-  color: #000000 !important;
+  /* color: #000000 !important; */
 }
 
 nav a,
 header a,
 .navbar a {
-  color: #000000 !important;
+  /* color: #000000 !important; */
 }
 
 /* Footer text */
 footer {
-  color: #000000 !important;
+  /* color: #000000 !important; */
 }
 
 footer a {
-  color: #000000 !important;
+  /* color: #000000 !important; */
 }
 
 /* List text */
 ul,
 ol {
-  color: #000000 !important;
+  /* color: #000000 !important; */
 }
 
 ul li,
 ol li {
-  color: #000000 !important;
+  /* color: #000000 !important; */
 }
 
 /* Table text */
 table {
-  color: #000000 !important;
+  /* color: #000000 !important; */
 }
 
 table th,
 table td {
-  color: #000000 !important;
+  /* color: #000000 !important; */
 }
 
 /* Link styling */
@@ -688,7 +686,7 @@ a:hover {
 p,
 span,
 div {
-  color: #000000 !important;
+  /* color: #000000 !important; */
 }
 
 /* Heading elements */
@@ -698,25 +696,25 @@ h3,
 h4,
 h5,
 h6 {
-  color: #000000 !important;
+  /* color: #000000 !important; */
 }
 
 /* Strong and emphasis */
 strong,
 b {
-  color: #000000 !important;
+  /* color: #000000 !important; */
   font-weight: 600;
 }
 
 em,
 i {
-  color: #000000 !important;
+  /* color: #000000 !important; */
   font-style: italic;
 }
 
 /* Code and pre elements */
 code {
-  color: #000000 !important;
+  /* color: #000000 !important; */
   background-color: #f3f4f6;
   padding: 0.125rem 0.25rem;
   border-radius: 0.25rem;
@@ -725,7 +723,7 @@ code {
 }
 
 pre {
-  color: #000000 !important;
+  /* color: #000000 !important; */
   background-color: #f3f4f6;
   padding: 1rem;
   border-radius: 0.5rem;
@@ -735,7 +733,7 @@ pre {
 
 /* Blockquote styling */
 blockquote {
-  color: #000000 !important;
+  /* color: #000000 !important; */
   border-left: 4px solid #e5e7eb;
   padding-left: 1rem;
   margin: 1em 0;
@@ -744,14 +742,14 @@ blockquote {
 
 /* Ensure all text in the application is visible */
 * {
-  color: inherit;
+  /* color: inherit; */
 }
 
 /* Override any light gray text */
 .text-gray-300,
 .text-gray-400,
 .text-gray-500 {
-  color: #000000 !important;
+  /* color: #000000 !important; */
 }
 
 /* Ensure form validation messages are visible */

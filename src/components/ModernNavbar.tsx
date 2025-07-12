@@ -88,16 +88,7 @@ export default function ModernNavbar({
   return (
     <>
       {/* Glassmorphism Navbar */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        isScrolled 
-          ? 'bg-white/10 backdrop-blur-xl shadow-2xl border-b border-white/20' 
-          : 'bg-white/5 backdrop-blur-md'
-      }`}>
-        {/* Animated background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 opacity-50"></div>
-        
-        {/* Shimmer effect */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-pulse"></div>
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 bg-white shadow-2xl border-b border-accent`}>
         
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
@@ -116,10 +107,10 @@ export default function ModernNavbar({
                 </div>
               </div>
               <div className="flex flex-col">
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent drop-shadow-lg">
+                <h1 className="text-2xl font-bold text-gray-900 drop-shadow-lg">
                   Client Compass
                 </h1>
-                <p className="text-xs text-white/70 hidden sm:block font-medium">Navigate to Success</p>
+                <p className="text-xs text-gray-700 hidden sm:block font-medium">Navigate to Success</p>
               </div>
             </Link>
 
@@ -173,18 +164,18 @@ export default function ModernNavbar({
                       <User className="w-5 h-5 text-white" />
                     </div>
                     <div className="hidden sm:block">
-                      <p className="text-sm font-semibold text-white">
+                      <p className="text-sm font-semibold text-gray-900">
                         {currentUser.firstName} {currentUser.lastName}
                       </p>
-                      <p className="text-xs text-white/70">{currentUser.email}</p>
+                      <p className="text-xs text-gray-700">{currentUser.email}</p>
                     </div>
                   </div>
 
                   {/* Premium Badge */}
                   {currentUser.subscriptionStatus === 'active' && (
-                    <div className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-yellow-400/90 to-orange-500/90 backdrop-blur-sm rounded-full border border-yellow-300/30 shadow-lg">
-                      <Crown className="w-4 h-4 text-white" />
-                      <span className="text-sm font-bold text-white">Premium</span>
+                    <div className="flex items-center space-x-2 px-4 py-2 bg-gold text-black rounded-full border border-gold/80 shadow-lg">
+                      <Crown className="w-4 h-4 text-black" />
+                      <span className="text-sm font-bold text-black">Premium</span>
                     </div>
                   )}
 
@@ -210,9 +201,9 @@ export default function ModernNavbar({
                   {/* Upgrade Button */}
                   <button
                     onClick={onUpgradeClick}
-                    className="px-8 py-3 bg-gradient-to-r from-blue-500/90 to-indigo-600/90 hover:from-blue-600/90 hover:to-indigo-700/90 text-white rounded-2xl font-semibold shadow-2xl hover:shadow-blue-500/25 transform hover:scale-105 transition-all duration-300 flex items-center space-x-2 backdrop-blur-sm border border-white/20"
+                    className="px-8 py-3 bg-accent text-secondary rounded-2xl font-semibold shadow-2xl hover:shadow-accent/50 transform hover:scale-105 transition-all duration-300 flex items-center space-x-2 border border-accent"
                   >
-                    <Zap className="w-5 h-5" />
+                    <Zap className="w-5 h-5 text-secondary" />
                     <span>Upgrade</span>
                   </button>
                 </div>
