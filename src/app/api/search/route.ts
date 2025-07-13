@@ -6,8 +6,9 @@ const anonymousSearchCounts = new Map<string, { count: number; lastReset: number
 // Track premium user searches by user ID
 const premiumUserSearchCounts = new Map<string, { count: number; lastReset: number; lastRequest: number }>();
 const SEARCH_LIMIT_RESET_HOURS = 24;
+const MONTHLY_LIMIT_RESET_DAYS = 30;
 const MIN_REQUEST_INTERVAL_MS = 2000; // Minimum 2 seconds between requests
-const PREMIUM_DAILY_SEARCH_LIMIT = 100; // Premium users get 100 searches per day
+const PREMIUM_MONTHLY_SEARCH_LIMIT = 50; // Premium users get 50 searches per month
 
 // Simple cache to prevent duplicate expensive API calls
 const searchCache = new Map<string, { results: SearchResults; timestamp: number }>();
@@ -64,14 +65,14 @@ export async function POST(request: NextRequest) {
       const userData = premiumUserSearchCounts.get(userId);
       
       if (userData) {
-        // Reset count if 24 hours have passed
-        const hoursElapsed = (now - userData.lastReset) / (1000 * 60 * 60);
-        if (hoursElapsed >= SEARCH_LIMIT_RESET_HOURS) {
+        // Reset count if 30 days have passed
+        const daysElapsed = (now - userData.lastReset) / (1000 * 60 * 60 * 24);
+        if (daysElapsed >= MONTHLY_LIMIT_RESET_DAYS) {
           premiumUserSearchCounts.set(userId, { count: 0, lastReset: now, lastRequest: now });
-        } else if (userData.count >= PREMIUM_DAILY_SEARCH_LIMIT) {
+        } else if (userData.count >= PREMIUM_MONTHLY_SEARCH_LIMIT) {
           return NextResponse.json({
-            error: 'Daily search limit reached',
-            message: `You have reached your daily limit of ${PREMIUM_DAILY_SEARCH_LIMIT} searches. Please try again tomorrow.`,
+            error: 'Monthly search limit reached',
+            message: `You have reached your monthly limit of ${PREMIUM_MONTHLY_SEARCH_LIMIT} searches. Your limit will reset next month.`,
             searchesRemaining: 0
           }, { status: 429 });
         }
@@ -117,7 +118,7 @@ export async function POST(request: NextRequest) {
         error: 'Search limit exceeded',
         message: 'You have reached the limit of 1 free search. Subscribe to get unlimited searches.',
         requiresSubscription: true,
-        upgradePrice: 7.00
+        upgradePrice: 12.00
       }, { status: 403 });
     }
 
@@ -211,9 +212,9 @@ export async function POST(request: NextRequest) {
         total_found: results.length,
         showing: limitedResults.length,
         remaining: remainingCount,
-        upgrade_price: 7.00,
+        upgrade_price: 12.00,
         searches_remaining: isSubscribed ? 
-          Math.max(0, PREMIUM_DAILY_SEARCH_LIMIT - (premiumUserSearchCounts.get(userId)?.count || 0)) : 
+          Math.max(0, PREMIUM_MONTHLY_SEARCH_LIMIT - (premiumUserSearchCounts.get(userId)?.count || 0)) : 
           Math.max(0, 1 - (anonymousSearchCounts.get(userIP)?.count || 0))
       }
     };

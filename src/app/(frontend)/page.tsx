@@ -389,7 +389,7 @@ export default function ClientCompass() {
                     <h3 className="text-lg font-bold text-gray-900">Premium Search Options</h3>
                   </div>
                   <p className="text-sm text-gray-600 mb-4">
-                    Premium users get up to 100 searches per day and can analyze up to 50 businesses per search.
+                    Premium users get up to 50 searches per month and can analyze up to 20 businesses per search.
                   </p>
                   
                   <div className="grid md:grid-cols-3 gap-6">

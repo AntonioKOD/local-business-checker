@@ -314,8 +314,8 @@ const CheckoutForm: React.FC<{ onSuccess: (user: { id: string; email: string; fi
         <h4 className="font-semibold text-gray-900">What you&apos;ll get:</h4>
         <ul className="space-y-2">
           {[
-            '100 searches per day (vs 1 for free)',
-            'Up to 50 businesses per search (vs 1 for free)',
+            '50 searches per month (vs 1 for free)',
+            'Up to 20 businesses per search (vs 1 for free)',
             'Advanced search filters (rating, radius, website filtering)',
             'Business insights & opportunity scoring',
             'Market analysis & competitor intelligence',
@@ -333,7 +333,7 @@ const CheckoutForm: React.FC<{ onSuccess: (user: { id: string; email: string; fi
         </ul>
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border-2 border-blue-200 shadow-lg">
           <div className="flex justify-between items-center mb-2">
-                            <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">$7.00</span>
+                            <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">$12.00</span>
             <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">per month</span>
           </div>
           <div className="flex items-center space-x-2">

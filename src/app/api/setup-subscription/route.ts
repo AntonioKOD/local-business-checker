@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
 
       const price = await stripe.prices.create({
         currency: 'usd',
-                  unit_amount: 700, // $7.00 in cents
+                  unit_amount: 1200, // $12.00 in cents
         recurring: {
           interval: 'month',
         },
